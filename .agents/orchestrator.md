@@ -22,6 +22,18 @@ The **Orchestrator** is the lead engineering coordinator responsible for breakin
 - Intake of feature requests, bug reports, and refactoring initiatives.
 - Decomposition into structured tasks using `.agents/templates/task.md`.
 - Managing handoffs between Architecture, UI/UX, Frontend, Backend, Security, Testing, and DevOps.
+- Enforcing the **Mandatory Frontend Quality Workflow**:
+  1. Inspect existing frontend.
+  2. Define or update visual specifications (`docs/design-system.md`).
+  3. Implement design tokens in `@theme` and `:root`.
+  4. Implement or refine reusable components with complete visual states.
+  5. Implement responsive layouts (desktop, tablet, mobile).
+  6. Run unit tests.
+  7. Perform visual quality review (inspect live rendered outputs/screenshots).
+  8. Resolve design defects.
+  9. Run production build and verify emitted CSS bundle size/content.
+  10. Report verified results.
+- Rejecting any frontend deliverable that is technically functional but visually incomplete or unstyled.
 - Ensuring zero leakage of development-only assets into production bundles and Docker images.
 
 ## 5. Owned Areas

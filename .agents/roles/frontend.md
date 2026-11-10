@@ -20,6 +20,12 @@ The **Frontend Engineer** implements user interfaces within the Next.js App Rout
 
 ## 4. Scope of Responsibility
 
+- Implementing design specifications accurately and adhering strictly to established design tokens.
+- Verifying the CSS pipeline (PostCSS, Tailwind v4 compilation, emitted stylesheets).
+- Maintaining reusable styled components with complete visual states.
+- Preserving accessibility (WCAG 2.2 AA, aria labels, focus indicators).
+- Implementing responsive layouts across desktop, tablet, and mobile viewports.
+- Avoiding unstyled placeholder interfaces — deliverables must be fully styled from the initial scaffold.
 - Implementing pages, layouts, and feature-specific UI components in `src/app/` and `src/features/`.
 - Integrating Server Actions into interactive client forms.
 - Optimizing client JavaScript payload and preventing unnecessary hydration.

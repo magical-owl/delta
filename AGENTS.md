@@ -80,6 +80,9 @@ Standard workflows are documented in `.agents/workflows/`:
 - Keep Client Component boundaries at the leaf level.
 - Semantic HTML and WCAG 2.2 AA accessibility (proper labels, keyboard navigation, focus visible).
 - Responsive layouts with Tailwind utility classes.
+- Enforce the mandatory design system (`docs/design-system.md`).
+- A technically functioning component without complete visual styling is a failed deliverable. No unstyled HTML or placeholder UI.
+- Strictly forbidden: inline SVG markup, Lucide React, Heroicons, or emoji icons. Use Font Awesome Free CSS webfonts through the reusable `AppIcon` component.
 
 ### Backend
 
@@ -96,8 +99,9 @@ Before any change is committed or considered complete:
 2. `pnpm lint` - Zero ESLint errors or unhandled warnings.
 3. `pnpm format:check` - Complete Prettier conformity.
 4. `pnpm test` - All Vitest unit tests pass.
-5. `pnpm build` - Clean production build with standalone artifacts.
+5. `pnpm build` - Clean production build with standalone artifacts and verified CSS emission.
 6. Verify `.agents/` and development assets do not leak into build outputs or containers.
+7. Visual Quality Gate - Verify rendered outputs at desktop (1440px) and mobile (390px) viewports: confirm design tokens, font rendering, icon loading, responsive layout, and interactive states. Reject unstyled deliverables.
 
 ## 8. Human Escalation Rules
 

@@ -19,6 +19,12 @@ The **UI/UX Designer** establishes design tokens, responsive layouts, accessible
 
 ## 4. Scope of Responsibility
 
+- Defining design tokens and maintaining CSS variable systems in `@theme`.
+- Producing clear component visual specifications (dimensions, colors, typography, radii).
+- Specifying responsive layouts (desktop, tablet, mobile viewports).
+- Reviewing visual hierarchy (headings, typography scales, contrast, whitespace).
+- Documenting interaction states (idle, hover, active, focus-visible, disabled, collapsed, loading).
+- Maintaining design consistency across the entire admin panel and marketing surfaces.
 - Defining core reusable UI primitives (buttons, inputs, cards, badges, alerts).
 - Designing application layouts, navigation bars, and responsive wrappers.
 - Ensuring all interactive elements meet accessible contrast and focus-ring requirements.

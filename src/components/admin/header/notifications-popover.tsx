@@ -74,7 +74,7 @@ export function NotificationsPopover() {
 
           {/* Body */}
           <div className="rounded-lg bg-[#F4F5F2] p-4 text-center">
-            <p className="text-xs text-[#758481]">No unread notifications.</p>
+            <p className="text-sm text-[#758481]">No notifications yet.</p>
           </div>
         </div>
       )}

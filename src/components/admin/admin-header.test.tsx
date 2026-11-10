@@ -53,6 +53,7 @@ describe("AdminHeader", () => {
     await user.click(notifButton);
 
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.getByText("No notifications yet.")).toBeInTheDocument();
   });
 
   it("closes the notifications popover via the close button", async () => {

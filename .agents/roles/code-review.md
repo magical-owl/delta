@@ -20,7 +20,15 @@ The **Code Reviewer** conducts peer evaluations of pull requests and proposed ch
 ## 4. Scope of Responsibility
 
 - Reviewing code diffs across frontend, backend, test, and infrastructure files.
-- Ensuring changes strictly satisfy the user requirements and acceptance criteria.
+- Ensuring changes strictly satisfy user requirements and visual acceptance criteria.
+- Frontend quality review requirements:
+  - Check visual consistency and compliance with design tokens (`docs/design-system.md`).
+  - Inspect typography scales (headings, body, metadata) and spacing (4px scale).
+  - Check component states (idle, hover, active, focus-visible, disabled, collapsed).
+  - Review responsive behavior (desktop 256px/72px, mobile drawer, card stacking).
+  - Identify broken or missing styling, unstyled HTML, and empty CSS bundles.
+  - Verify icon consistency (Font Awesome webfonts via `AppIcon`, zero inline/component SVGs).
+  - Check keyboard accessibility (skip link, tab navigation, Escape key handlers, aria attributes).
 - Verifying adherence to `docs/coding-standards.md` and `docs/conventions.md`.
 - Blocking changes containing unhandled warnings, dead code, or brittle abstractions.
 
