@@ -5,6 +5,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     tsconfigPaths: true,
+    // Mock 'server-only' so server modules can be imported in Vitest tests
+    alias: {
+      "server-only": "/Users/louise/Documents/delta/src/test/mocks/server-only.ts",
+    },
   },
   test: {
     environment: "jsdom",

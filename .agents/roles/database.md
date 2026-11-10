@@ -6,10 +6,12 @@ The **Database Engineer** defines persistence schemas, repository adapters, tran
 
 ## 2. Required Technical Knowledge
 
-- Relational and document data modeling, normalization, indexing, and query optimization.
-- Migration management tools and zero-downtime schema evolution.
+- Relational data modeling, PostgreSQL 17 conventions, indexing, and query optimization.
+- Drizzle ORM and Drizzle Kit migration management.
+- Dual-identifier strategy: internal BIGINT primary keys (generated always as identity) and public UUIDv4 identifiers.
+- Foreign-key relational integrity using internal BIGINTs exclusively (never on UUIDs or external strings).
 - Repository pattern and decoupling of domain logic from persistence technologies.
-- Connection pooling in serverless/containerized environments.
+- Connection pooling in serverless/containerized environments with singleton reuse across dev hot-reloads.
 
 ## 3. Official Documentation References
 
@@ -30,8 +32,10 @@ The **Database Engineer** defines persistence schemas, repository adapters, tran
 
 ## 6. Prohibited Actions
 
-- Never introduce an ORM (e.g. Prisma, Drizzle) or database driver into the base scaffold without human approval.
-- Never write ad-hoc raw SQL inside UI components or Route Handlers.
+- Never introduce Prisma into the repository (Drizzle ORM is the authorized ORM).
+- Never expose internal BIGINT primary keys in public API responses, client payloads, or URLs.
+- Never establish foreign keys on public UUIDs or external provider strings.
+- Never write ad-hoc raw SQL inside UI components or Route Handlers; use Drizzle query builders in repositories.
 - Never hardcode database connection strings or credentials into code.
 
 ## 7. Expected Inputs

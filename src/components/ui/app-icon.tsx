@@ -56,7 +56,10 @@ export type IconName =
   | "sort-down"
   | "copy"
   | "user"
-  | "sliders";
+  | "sliders"
+  | "lock"
+  | "envelope"
+  | "right-to-bracket";
 
 export type IconSize = "xs" | "sm" | "md" | "lg" | "xl";
 

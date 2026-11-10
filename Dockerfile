@@ -9,7 +9,7 @@ RUN corepack enable && corepack prepare pnpm@12.18.0 --activate
 # Stage 2: Install dependencies based on preferred package manager
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 3: Rebuild the source code only when needed
@@ -21,6 +21,18 @@ COPY . .
 # Set environment variables for production build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+# Dummy build-time env vars so Next.js page data collection passes validation.
+# Real values are injected at runtime via docker-compose env_file / environment.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV REDIS_URL="redis://localhost:6379"
+ENV AUTH0_SECRET="build-time-placeholder-secret-not-used-at-runtime"
+ENV APP_BASE_URL="http://localhost:3000"
+ENV AUTH0_DOMAIN="build.example.com"
+ENV AUTH0_CLIENT_ID="build-placeholder"
+ENV AUTH0_CLIENT_SECRET="build-placeholder"
+ENV PASSWORD_PEPPER_ACTIVE_VERSION="v1"
+ENV PASSWORD_PEPPER_V1="build-time-placeholder-pepper-not-used-at-runtime"
 
 RUN pnpm build
 

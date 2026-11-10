@@ -83,8 +83,29 @@ docker build -t delta-scaffold:latest .
 
 ### Run with Docker Compose
 
+The `docker-compose.yml` launches PostgreSQL 17, Redis 7, and the Next.js standalone application with network health dependencies:
+
 ```bash
 docker compose up --build -d
+```
+
+Services initialized:
+
+- `delta_postgres`: PostgreSQL 17 on port 5432 with health check.
+- `delta_redis`: Redis 7 on port 6379 with health check.
+- `delta_web`: Next.js web application on port 3000, depending on both healthy services.
+
+### Database Migrations in Docker
+
+Run database migrations against the containerized PostgreSQL database:
+
+```bash
+# Push schema updates directly (development)
+DATABASE_URL=postgresql://delta:delta_dev_password@localhost:5432/delta pnpm db:push
+
+# Generate and apply formal migrations (production workflow)
+pnpm db:generate
+DATABASE_URL=postgresql://delta:delta_dev_password@localhost:5432/delta pnpm db:migrate
 ```
 
 ### Verify Container Health

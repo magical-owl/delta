@@ -105,7 +105,24 @@ Before any change is committed or considered complete:
 6. Verify `.agents/` and development assets do not leak into build outputs or containers.
 7. Visual Quality Gate - Verify rendered outputs at desktop (1440px) and mobile (390px) viewports: confirm design tokens, font rendering, icon loading, responsive layout, and interactive states. Reject unstyled deliverables.
 
-## 8. Human Escalation Rules
+## 8. Permanent Authentication, Registration & Provisioning Security Rules
+
+The following 12 rules are non-negotiable and strictly enforced:
+
+1. **Public registration is disabled by default**: Missing, malformed, or unrecognized configuration values (`ENABLE_PUBLIC_REGISTRATION`) must fail closed to false. The `/register` page displays an invitation-only informational state and server endpoints independently enforce this policy.
+2. **User provisioning requires approved authorization**: Only users with explicit server-verified permissions (`users:create` or `admin:all`) can create accounts.
+3. **Privilege escalation prevention**: Ordinary administrators cannot create or promote accounts to the Superadmin role; Superadmin assignment requires explicitly privileged procedures.
+4. **Secure account activation and invitations**: High-entropy invitation tokens must be digested (SHA-256) before database storage, bound to single accounts, enforce expiration, prevent token reuse, and raw tokens must never be logged or returned in ordinary production API responses.
+5. **Pending and disabled user access denial**: Pending or disabled accounts cannot access protected administrative operations or resources.
+6. **Server-side authorization enforcement**: All user-management mutations must enforce permissions server-side; never rely on frontend UI checks alone.
+7. **Rate limiting and audit logging**: Sensitive operations (user creation, account status changes, registration endpoints) must enforce rate limiting and record structured audit events.
+8. **Argon2id password hashing**: Passwords must be hashed using Argon2id with cryptographically safe parameters and constant-time verification.
+9. **Internal database IDs remain BIGINT**: All internal primary keys and foreign keys must remain 64-bit `BIGINT` (`generated always as identity`).
+10. **Public identifiers remain UUIDv4**: All user-facing APIs, URLs, and external identifiers must expose cryptographically unguessable UUIDv4 values.
+11. **PostgreSQL and Drizzle ORM remain mandatory**: Persistence must use PostgreSQL with Drizzle ORM query builders and Drizzle Kit migrations.
+12. **No insecure default credentials or automatic Superadmin provisioning**: The initial Superadmin is bootstrapped exclusively through the deliberate manual command `pnpm auth:bootstrap-superadmin`, which prevents duplicate superadmin creation and never runs on application startup.
+
+## 9. Human Escalation Rules
 
 Agents must immediately escalate to the human lead when:
 

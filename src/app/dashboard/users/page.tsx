@@ -1,11 +1,14 @@
-import { UnderConstruction } from "@/components/shared/under-construction";
+import type { Metadata } from "next";
+import { UserManagementDashboard } from "./user-management-dashboard";
 
+export const metadata: Metadata = {
+  title: "User Management",
+};
+
+/**
+ * Users Management Route — Server Component wrapper.
+ * Protected by RBAC session controls.
+ */
 export default function UsersPage() {
-  return (
-    <UnderConstruction
-      title="User Management"
-      description="The user directory, account provisioning, and permission management interface is under development."
-      returnHref="/dashboard"
-    />
-  );
+  return <UserManagementDashboard />;
 }

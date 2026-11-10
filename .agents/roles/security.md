@@ -27,11 +27,20 @@ The **Security Engineer** guarantees that the application, APIs, dependencies, a
 ## 5. Owned Areas
 
 - `src/lib/security/`
+- `src/lib/rbac/`
+- `src/lib/ratelimit/`
+- `src/lib/audit/`
 - Security header definitions in `next.config.ts`.
 - Security checklists and threat models in `docs/architecture.md`.
 
 ## 6. Prohibited Actions
 
+- Never implement custom password storage, hashing, or verification without HMAC pepper pre-hashing and Argon2id.
+- Never store plaintext passwords, reversible password ciphertext, or raw pepper secret keys in PostgreSQL.
+- Never commit pepper values or include them in Docker images or client bundles (`NEXT_PUBLIC_` prohibited).
+- Never allow unpeppered password fallback when pepper configuration is missing; must fail closed.
+- Never log passwords, tokens, cookies, or secrets into audit trails or console logs.
+- Never bypass rate limiting in production environments (`REDIS_URL` enforcement).
 - Never allow unvalidated user input to reach eval, exec, or raw HTML rendering (`dangerouslySetInnerHTML`).
 - Never allow hardcoded API keys, tokens, or private secrets in the codebase.
 - Never disable CORS or CSRF safeguards for convenience without an explicit documented exception.

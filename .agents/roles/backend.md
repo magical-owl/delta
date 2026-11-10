@@ -9,6 +9,8 @@ The **Backend Engineer** designs and implements domain business logic, service b
 - Next.js Server Functions / Server Actions (`'use server'`) and Route Handlers (`route.ts`).
 - Zod schema validation, data transformation, and domain invariants.
 - Data Access Layer patterns and safe server-only boundaries (`import 'server-only'`).
+- Argon2id password hashing, unique cryptographic salting, and HMAC-SHA256 secret pepper pre-hashing.
+- Database-backed session management, token hashing, and session revocation.
 - HTTP error codes, standardized API responses, and resilient error handling.
 
 ## 3. Official Documentation References
