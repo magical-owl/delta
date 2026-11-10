@@ -54,6 +54,54 @@ export const adminNavigation: NavEntry[] = [
     description: "Compliance exports, audit logs, and scheduled reports.",
   },
   {
+    groupTitle: "Component Library",
+    icon: "cube",
+    items: [
+      {
+        title: "Overview",
+        href: "/dashboard/components",
+        icon: "layer-group",
+        description: "Showcase index and reusable component directory.",
+      },
+      {
+        title: "Inputs & Forms",
+        href: "/dashboard/components/inputs",
+        icon: "font",
+        description: "Text, email, password toggle, search, textarea, validation.",
+      },
+      {
+        title: "Selections",
+        href: "/dashboard/components/selections",
+        icon: "list-check",
+        description: "Native selects, checkboxes, radio groups, and switches.",
+      },
+      {
+        title: "Dates & Time",
+        href: "/dashboard/components/dates",
+        icon: "calendar-days",
+        description: "Native date pickers, min/max bounds, date ranges.",
+      },
+      {
+        title: "Data Tables",
+        href: "/dashboard/components/tables",
+        icon: "table",
+        description: "Sortable, searchable, selectable, and paginated tables.",
+      },
+      {
+        title: "Feedback & Overlays",
+        href: "/dashboard/components/feedback",
+        icon: "bell",
+        description: "Alerts, badges, dialogs, popovers, and tooltips.",
+      },
+      {
+        title: "UI Playground",
+        href: "/dashboard/playground",
+        icon: "sliders",
+        description: "Interactive component workbench and prop configurator.",
+      },
+    ],
+  },
+  {
     groupTitle: "Management",
     icon: "users-gear",
     items: [
@@ -102,6 +150,34 @@ export const routeTitleMap: Record<string, { title: string; subtitle: string }> 
   "/dashboard/reports": {
     title: "Reports & Audits",
     subtitle: "Compliance certificates, audit trails, and export logs",
+  },
+  "/dashboard/components": {
+    title: "Component Library",
+    subtitle: "Interactive UI primitives, form controls, and feedback systems",
+  },
+  "/dashboard/components/inputs": {
+    title: "Input Controls & Forms",
+    subtitle: "Accessible text, email, password visibility, search, and validation",
+  },
+  "/dashboard/components/selections": {
+    title: "Selection Controls",
+    subtitle: "Dropdown selects, grouped checkboxes, radio groups, and switches",
+  },
+  "/dashboard/components/dates": {
+    title: "Date & Time Pickers",
+    subtitle: "Native date pickers, min/max constraints, and range validation",
+  },
+  "/dashboard/components/tables": {
+    title: "Data Tables",
+    subtitle: "Sortable headers, query filtering, pagination, and multi-row selection",
+  },
+  "/dashboard/components/feedback": {
+    title: "Feedback & Overlays",
+    subtitle: "Contextual alerts, status badges, modal dialogs, popovers, and tooltips",
+  },
+  "/dashboard/playground": {
+    title: "UI Playground",
+    subtitle: "Interactive component workbench, live prop tweaking, and code generation",
   },
   "/dashboard/management/teams": {
     title: "Teams",

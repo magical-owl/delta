@@ -80,7 +80,9 @@ Standard workflows are documented in `.agents/workflows/`:
 - Keep Client Component boundaries at the leaf level.
 - Semantic HTML and WCAG 2.2 AA accessibility (proper labels, keyboard navigation, focus visible).
 - Responsive layouts with Tailwind utility classes.
-- Enforce the mandatory design system (`docs/design-system.md`).
+- Enforce the mandatory design system (`docs/design-system.md`) and theme system (`docs/theme-system.md`).
+- Persistent Light/Dark Themes: Components must use semantic CSS tokens (`var(--background)`, `var(--surface)`, `var(--primary)`, etc.) to support both light and dark modes seamlessly. Theme must be stored in `admin-theme`.
+- Component Library: Form controls, buttons, tables, alerts, overlays must use the centralized `App*` components in `src/components/ui/` (`docs/component-library.md`).
 - A technically functioning component without complete visual styling is a failed deliverable. No unstyled HTML or placeholder UI.
 - Strictly forbidden: inline SVG markup, Lucide React, Heroicons, or emoji icons. Use Font Awesome Free CSS webfonts through the reusable `AppIcon` component.
 

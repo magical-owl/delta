@@ -5,6 +5,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { cn } from "@/lib/utils/cn";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { NotificationsPopover } from "@/components/admin/header/notifications-popover";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export interface AdminHeaderProps {
   title: string;
@@ -18,8 +19,8 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     <header
       className={cn(
         "sticky top-0 z-40 flex h-16 items-center justify-between",
-        "bg-[#FFFFFF] border-b border-[#DFE6E2]",
-        "px-4 sm:px-6 lg:px-8 shadow-xs"
+        "bg-[var(--surface)] border-b border-[var(--border)]",
+        "px-4 sm:px-6 lg:px-8 shadow-xs transition-colors duration-150"
       )}
     >
       {/* Left side */}
@@ -29,24 +30,27 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           type="button"
           onClick={toggleMobile}
           aria-label="Open navigation menu"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[#758481] hover:bg-slate-100 hover:text-[#192E32] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B8881] lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] lg:hidden"
         >
           <AppIcon name="bars" size="md" />
         </button>
 
         {/* Page title + subtitle */}
         <div className="flex flex-col">
-          <h1 className="text-lg sm:text-xl font-semibold leading-tight text-[#192E32]">
+          <h1 className="text-lg sm:text-xl font-semibold leading-tight text-[var(--foreground)]">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xs text-[#758481] leading-tight mt-0.5">{subtitle}</p>
+            <p className="text-xs text-[var(--text-muted)] leading-tight mt-0.5">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>
 
-      {/* Right side */}
+      {/* Right side actions */}
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <NotificationsPopover />
       </div>
     </header>

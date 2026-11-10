@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
+import { ThemeScript } from "@/lib/theme/theme-script";
+import { ThemeProvider } from "@/lib/theme/theme-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +22,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full antialiased ${GeistSans.variable}`}>
-      <body className="min-h-full flex flex-col font-sans bg-[#F4F5F2] text-[#192E32]">
-        {children}
+    <html
+      lang="en"
+      className={`h-full antialiased ${GeistSans.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="min-h-full flex flex-col font-sans bg-[var(--background)] text-[var(--foreground)]">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

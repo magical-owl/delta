@@ -157,6 +157,15 @@ import { AppIcon } from "@/components/ui/app-icon";
 - Route-specific title and explanatory copy.
 - Primary return button: `bg-[#4B8881] hover:bg-[#386E69] text-white rounded-lg px-4 py-2.5 text-sm font-medium`.
 
+### 7.5 Micro-Interactions & Animation Keyframes
+
+Defined in `src/app/globals.css` with matching `--animate-*` Tailwind tokens:
+
+- **Fade In (`animate-fade-in`)**: 150ms `cubic-bezier(0.16, 1, 0.3, 1)` opacity transition for overlays, modals, and tab content switching.
+- **Scale In (`animate-scale-in`)**: 150ms `scale(0.95)` to `scale(1)` transition for floating popovers and dialog panels.
+- **Slide In Left (`animate-slide-in-left`)**: 200ms `translateX(-100%)` to `translateX(0)` for left-docked drawers.
+- **Slide In Right (`animate-slide-in-right`)**: 200ms `translateX(100%)` to `translateX(0)` for right-docked drawers.
+
 ---
 
 ## 8. Permanent Visual Quality Gate Checklist

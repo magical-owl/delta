@@ -20,7 +20,9 @@ The **Frontend Engineer** implements user interfaces within the Next.js App Rout
 
 ## 4. Scope of Responsibility
 
-- Implementing design specifications accurately and adhering strictly to established design tokens.
+- Implementing design specifications accurately and adhering strictly to established design tokens and light/dark theme CSS variables.
+- Using the reusable component library in `src/components/ui/` (`AppButton`, `AppInput`, `AppTable`, `AppDialog`, `AppAlert`, etc.) rather than ad-hoc unstyled primitives.
+- Ensuring zero SVG imports or inline SVGs: always use Font Awesome Free CSS webfonts via `AppIcon`.
 - Verifying the CSS pipeline (PostCSS, Tailwind v4 compilation, emitted stylesheets).
 - Maintaining reusable styled components with complete visual states.
 - Preserving accessibility (WCAG 2.2 AA, aria labels, focus indicators).

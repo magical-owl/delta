@@ -15,6 +15,7 @@ export function Sidebar() {
     <>
       {/* ── Desktop sidebar ── */}
       <aside
+        id="admin-sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-30 hidden lg:flex flex-col",
           "bg-[#172632] text-[#F4F7F6] border-r border-[#192E32]",
@@ -31,8 +32,12 @@ export function Sidebar() {
         </div>
 
         {/* Bottom toggle section */}
-        <div className="flex items-center justify-center border-t border-[#192E32]/80 p-3">
-          <SidebarToggle isCollapsed={isCollapsed} onToggle={toggleCollapsed} />
+        <div className="border-t border-[#192E32]/80 p-3">
+          <SidebarToggle
+            isCollapsed={isCollapsed}
+            onToggle={toggleCollapsed}
+            sidebarId="admin-sidebar"
+          />
         </div>
       </aside>
 

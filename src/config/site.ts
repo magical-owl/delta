@@ -8,6 +8,6 @@ export interface SiteConfig {
 export const siteConfig: SiteConfig = {
   name: "Admin Workspace",
   description: "Production-grade SaaS workspace and administrative management interface.",
-  tagline: "Enterprise Systems Orchestration",
+  tagline: "Enterprise Systems",
   version: "1.0.0",
 };

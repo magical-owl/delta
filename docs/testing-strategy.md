@@ -42,6 +42,9 @@ Unit tests are colocated alongside their subject code with a `.test.ts` or `.tes
 ```
 src/
   lib/
+    theme/
+      theme-context.tsx
+      theme.test.tsx
     utils/
       cn.ts
       cn.test.ts
@@ -50,13 +53,39 @@ src/
       inquiry.schema.test.ts
   components/
     ui/
-      button.tsx
-      button.test.tsx
+      app-input.tsx
+      app-input.test.tsx
+      app-table.tsx
+      app-table.test.tsx
+      app-dialog.tsx
+      app-dialog.test.tsx
+      app-switch.tsx
+      app-switch.test.tsx
   server/
     services/
       inquiry.service.ts
       inquiry.service.test.ts
 ```
+
+## 5. Theme & Component Testing Patterns
+
+1. **Persistent Theme Testing (`src/lib/theme/theme.test.tsx`)**:
+   - Verifies default theme fallback (`"light"`).
+   - Verifies restoration from `localStorage` (`admin-theme`).
+   - Verifies graceful error recovery when `localStorage.setItem` throws (`QuotaExceededError`).
+   - Verifies cross-tab synchronization via `window.dispatchEvent(new StorageEvent("storage", ...))`.
+   - Verifies DOM `data-theme` attribute synchronization.
+
+2. **UI Component Testing**:
+   - `AppInput`: Password visibility toggling, error alerts, helper text linkage.
+   - `AppSwitch`: Click toggling, keyboard Enter and Space activation, disabled invariants.
+   - `AppTable`: Column sorting, live client filtering, pagination boundary checks, multi-row selection.
+   - `AppDialog`: Portal rendering, focus containment, close button trigger, Escape key dismissal.
+   - `AppTabs`: Active panel rendering, tab switching on click, ArrowLeft/ArrowRight keyboard navigation.
+   - `AppAccordion`: Single mode expansion, multiple mode expansion, toggle open/close, aria-expanded verification.
+   - `AppProgress`: Linear progressbar role, aria-valuenow/min/max values, percentage label rendering, indeterminate mode.
+   - `AppAvatar`: Remote image rendering, initials fallback, icon fallback, and status dot ARIA indicators.
+   - `AppDrawer`: Modal portal mounting, panel header/body/footer rendering, close button event, Escape key dismissal.
 
 ## 5. Explicitly Deferred Testing Categories
 
