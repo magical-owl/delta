@@ -10,20 +10,24 @@ export interface ContentCardProps {
 
 /**
  * Reusable surface card for dashboard content regions.
+ * Adheres to 12px radius, #FFFFFF surface, #DFE6E2 border, 24px padding.
  */
 export function ContentCard({ title, children, footer, className }: ContentCardProps) {
   return (
     <div
-      className={cn("rounded-lg border border-slate-200 bg-white shadow-sm", className)}
+      className={cn(
+        "rounded-xl border border-[#DFE6E2] bg-[#FFFFFF] shadow-xs",
+        className
+      )}
     >
       {title && (
-        <div className="border-b border-slate-100 px-5 py-3.5">
-          <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
+        <div className="border-b border-[#DFE6E2]/70 px-6 py-4">
+          <h2 className="text-base font-semibold text-[#192E32]">{title}</h2>
         </div>
       )}
-      <div className="p-5">{children}</div>
+      <div className="p-6">{children}</div>
       {footer && (
-        <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-400">
+        <div className="border-t border-[#DFE6E2]/70 px-6 py-3.5 text-xs text-[#758481]">
           {footer}
         </div>
       )}

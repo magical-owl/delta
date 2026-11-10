@@ -43,9 +43,9 @@ export function NotificationsPopover() {
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-lg",
-          "text-slate-500 hover:bg-slate-100 hover:text-slate-700",
-          "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          "flex h-10 w-10 items-center justify-center rounded-lg",
+          "text-[#758481] hover:bg-slate-100 hover:text-[#192E32]",
+          "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B8881]"
         )}
       >
         <AppIcon name="bell" size="md" />
@@ -57,23 +57,25 @@ export function NotificationsPopover() {
           role="dialog"
           aria-label="Notifications"
           aria-live="polite"
-          className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-[#DFE6E2] bg-[#FFFFFF] p-5 shadow-lg"
         >
           {/* Panel header */}
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Notifications</h2>
+            <h2 className="text-sm font-semibold text-[#192E32]">Notifications</h2>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
               aria-label="Close notifications"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#758481] hover:bg-slate-100 hover:text-[#192E32] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B8881]"
             >
               <AppIcon name="xmark" size="sm" />
             </button>
           </div>
 
           {/* Body */}
-          <p className="text-sm text-slate-400">No notifications yet.</p>
+          <div className="rounded-lg bg-[#F4F5F2] p-4 text-center">
+            <p className="text-xs text-[#758481]">No unread notifications.</p>
+          </div>
         </div>
       )}
     </div>

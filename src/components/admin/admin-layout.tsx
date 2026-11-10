@@ -22,20 +22,24 @@ function AdminShell({ children }: AdminShellProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#F4F5F2] text-[#192E32]">
       {/* Fixed left sidebar (also handles mobile drawer) */}
       <Sidebar />
 
-      {/* Right content column — offset to avoid the fixed sidebar */}
+      {/* Right content column — offset to avoid fixed sidebar on desktop */}
       <div
-        className="flex flex-1 flex-col overflow-hidden min-w-0 transition-all duration-300 ease-in-out motion-reduce:transition-none"
-        style={{ paddingLeft: isCollapsed ? "4rem" : "15rem" }}
+        className="admin-workspace flex flex-1 flex-col overflow-hidden min-w-0 transition-all duration-300 ease-in-out motion-reduce:transition-none"
+        style={
+          {
+            "--workspace-sidebar-width": isCollapsed ? "72px" : "256px",
+          } as React.CSSProperties
+        }
       >
         <AdminHeader title={routeMeta.title} subtitle={routeMeta.subtitle} />
 
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto bg-slate-50 p-6"
+          className="flex-1 overflow-y-auto bg-[#F4F5F2] p-4 sm:p-6 lg:p-8"
           tabIndex={-1}
         >
           {children}
@@ -61,7 +65,7 @@ export function AdminLayoutClient({ children }: AdminLayoutProps) {
       {/* Skip-to-content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#4B8881] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#386E69]"
       >
         Skip to main content
       </a>

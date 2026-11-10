@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import "@fortawesome/fontawesome-free/css/all.min.css";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Next.js Production Scaffold",
+  title: "Admin Workspace — Systems Orchestration",
   description:
     "Production-oriented full-stack Next.js scaffold with AI agent orchestration",
 };
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f172a",
+  themeColor: "#172632",
 };
 
 export default function RootLayout({
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <html lang="en" className={`h-full antialiased ${GeistSans.variable}`}>
+      <body className="min-h-full flex flex-col font-sans bg-[#F4F5F2] text-[#192E32]">
         {children}
       </body>
     </html>

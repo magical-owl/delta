@@ -3,25 +3,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils/cn";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-slate-300 ring-offset-white dark:ring-offset-slate-950",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B8881] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-white",
   {
     variants: {
       variant: {
-        default:
-          "bg-slate-900 text-slate-50 hover:bg-slate-800 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200",
-        destructive:
-          "bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-900 dark:text-slate-50 dark:hover:bg-rose-800",
-        outline:
-          "border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50",
-        secondary:
-          "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700",
-        ghost:
-          "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50",
+        default: "bg-[#4B8881] text-white hover:bg-[#386E69] shadow-xs",
+        primary: "bg-[#4B8881] text-white hover:bg-[#386E69] shadow-xs",
+        destructive: "bg-rose-600 text-white hover:bg-rose-700",
+        outline: "border border-[#DFE6E2] bg-white text-[#192E32] hover:bg-slate-50",
+        secondary: "bg-slate-100 text-[#192E32] hover:bg-slate-200",
+        ghost: "hover:bg-slate-100 text-[#192E32]",
+        icon: "h-10 w-10 p-0 text-[#758481] hover:text-[#192E32] hover:bg-slate-100",
       },
       size: {
-        sm: "h-8 rounded-md px-3 text-xs",
+        sm: "h-8 rounded-lg px-3 text-xs",
         md: "h-9 px-4 py-2",
-        lg: "h-10 rounded-md px-8 text-base",
+        lg: "h-11 rounded-lg px-8 text-base",
+        icon: "h-10 w-10 p-0",
       },
     },
     defaultVariants: {

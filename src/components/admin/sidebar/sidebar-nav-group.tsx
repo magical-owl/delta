@@ -29,7 +29,7 @@ export function SidebarNavGroup({
   // When sidebar is collapsed, render items directly without group heading
   if (isCollapsed) {
     return (
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {group.items.map((item) => (
           <SidebarNavItem
             key={item.href}
@@ -44,11 +44,11 @@ export function SidebarNavGroup({
   }
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       {/* Group heading row */}
       <div className="flex items-center justify-between px-3 py-1.5">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500 select-none">
-          <AppIcon name={group.icon} size="xs" className="shrink-0 text-slate-500" />
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#A3B5C0] select-none">
+          <AppIcon name={group.icon} size="xs" className="shrink-0 text-[#A3B5C0]" />
           <span className="truncate">{group.groupTitle}</span>
         </div>
         <button
@@ -60,7 +60,7 @@ export function SidebarNavGroup({
               : `Expand ${group.groupTitle} group`
           }
           aria-expanded={isExpanded}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#A3B5C0] hover:bg-[#305B60]/50 hover:text-[#F4F7F6] transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B8881]"
         >
           <AppIcon name={isExpanded ? "chevron-down" : "chevron-right"} size="xs" />
         </button>
@@ -68,7 +68,7 @@ export function SidebarNavGroup({
 
       {/* Collapsible children */}
       {isExpanded && (
-        <div className="flex flex-col gap-0.5 transition-all duration-200 motion-reduce:transition-none">
+        <div className="flex flex-col gap-1 transition-all duration-200 motion-reduce:transition-none">
           {group.items.map((item) => (
             <SidebarNavItem
               key={item.href}
