@@ -1,0 +1,76 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Code Quality & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type Check
+        run: pnpm typecheck
+
+      - name: Lint Check
+        run: pnpm lint
+
+      - name: Format Check
+        run: pnpm format:check
+
+      - name: Unit Tests & Coverage
+        run: pnpm test:coverage
+
+      - name: Production Build
+        run: pnpm build
+
+  docker:
+    name: Docker Build & Verification
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: nextjs-scaffold:ci
+          load: true
+
+      - name: Verify Strict Development Isolation
+        run: |
+          echo "Verifying no development agent assets exist in the production image..."
+          MATCHES=$(docker run --rm nextjs-scaffold:ci find /app -name "*agent*" -o -name "AGENTS.md" | wc -l)
+          if [ "$MATCHES" -ne 0 ]; then
+            echo "ERROR: Development agent assets leaked into production image!"
+            exit 1
+          fi
+          echo "Verification passed: Image is strictly isolated from development agent resources."
