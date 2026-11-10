@@ -78,13 +78,13 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 ### Build the Image
 
 ```bash
-docker build -t nextjs-scaffold:latest .
+docker build -t delta-scaffold:latest .
 ```
 
 ### Run with Docker Compose
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
 ### Verify Container Health
@@ -99,7 +99,7 @@ curl -i http://localhost:3000/api/health
 Run the following inspection command to mathematically confirm that no `.agents/` or `AGENTS.md` files exist in the container:
 
 ```bash
-docker run --rm nextjs-scaffold:latest find /app -name "*agent*" -o -name "AGENTS.md"
+docker run --rm delta-scaffold:latest find /app -name "*agent*" -o -name "AGENTS.md"
 ```
 
 _(The command must return empty output, verifying total isolation)._
