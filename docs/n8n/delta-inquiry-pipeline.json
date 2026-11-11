@@ -1,0 +1,308 @@
+{
+  "name": "Delta Dashboard - Inquiry Triage Pipeline (Candidate 02)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-inquiries",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-47a8-b9c0-112233445566",
+      "name": "Inquiry Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "delta-inquiries"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "priorityTier",
+              "value": "={{ ($json.body.data.urgency === 'high' || $json.body.data.category === 'security' || $json.body.data.category === 'architecture') ? 'P1_CRITICAL' : ($json.body.data.urgency === 'medium' ? 'P2_STANDARD' : 'P3_ROUTINE') }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "assignedSquad",
+              "value": "={{ $json.body.data.category === 'security' ? 'Security Operations (SecOps)' : ($json.body.data.category === 'architecture' ? 'Solutions Architecture' : 'Client Success') }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "targetSlackChannel",
+              "value": "={{ ($json.body.data.urgency === 'high' || $json.body.data.category === 'security') ? '#alerts-urgent' : '#leads-inbound' }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "slaResponseHours",
+              "value": "={{ $json.body.data.urgency === 'high' ? 2 : ($json.body.data.urgency === 'medium' ? 8 : 24) }}",
+              "type": "number"
+            },
+            {
+              "id": "5",
+              "name": "notificationHeadline",
+              "value": "=New {{ $json.body.data.urgency?.toUpperCase() }} Priority Inquiry: {{ $json.body.data.subject }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-48b9-c0d1-223344556677",
+      "name": "AI Triage & Route Logic",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priorityTier }}",
+                    "rightValue": "P1_CRITICAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priorityTier }}",
+                    "rightValue": "P2_STANDARD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "c3d4e5f6-a7b8-49c0-d1e2-334455667788",
+      "name": "Switch on Priority Tier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "routingResult",
+              "value": "Dispatched to High-Priority Escalation Channel & Paged On-Call Lead",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "badgeStatus",
+              "value": "ESCALATED_P1",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-40d1-e2f3-445566778899",
+      "name": "Escalate Critical Inquiry (P1)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "routingResult",
+              "value": "Sent to Standard Inbound Slack Channel and added to CRM triage queue",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "badgeStatus",
+              "value": "QUEUED_P2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-41e2-f3a4-556677889900",
+      "name": "Queue Standard Inquiry (P2)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 320]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "routingResult",
+              "value": "Logged to customer support ticketing table",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "badgeStatus",
+              "value": "LOGGED_P3",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6a7b8c9-d0e1-42f3-a4b5-667788990011",
+      "name": "Log Routine Inquiry (P3)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 460]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"triaged\",\n  \"inquiryId\": \"{{ $('Inquiry Webhook Trigger').item.json.body.inquiryId }}\",\n  \"priorityTier\": \"{{ $('AI Triage & Route Logic').item.json.priorityTier }}\",\n  \"assignedSquad\": \"{{ $('AI Triage & Route Logic').item.json.assignedSquad }}\",\n  \"targetSlackChannel\": \"{{ $('AI Triage & Route Logic').item.json.targetSlackChannel }}\",\n  \"slaResponseHours\": {{ $('AI Triage & Route Logic').item.json.slaResponseHours }},\n  \"routingResult\": \"{{ $json.routingResult }}\",\n  \"badgeStatus\": \"{{ $json.badgeStatus }}\",\n  \"leadEmail\": \"{{ $('Inquiry Webhook Trigger').item.json.body.contact?.email }}\",\n  \"processedAt\": \"{{ $now.toISO() }}\",\n  \"executionId\": \"{{ $execution.id }}\"\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "X-Powered-By",
+                "value": "n8n-delta-inquiry-pipeline"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a7b8c9d0-e1f2-43a4-b5c6-778899001122",
+      "name": "Respond to Delta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1220, 300]
+    }
+  ],
+  "connections": {
+    "Inquiry Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Triage & Route Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Triage & Route Logic": {
+      "main": [
+        [
+          {
+            "node": "Switch on Priority Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on Priority Tier": {
+      "main": [
+        [
+          {
+            "node": "Escalate Critical Inquiry (P1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Standard Inquiry (P2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Routine Inquiry (P3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate Critical Inquiry (P1)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Standard Inquiry (P2)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Routine Inquiry (P3)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

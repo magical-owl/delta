@@ -1,0 +1,237 @@
+{
+  "name": "Delta Dashboard - User Onboarding Pipeline (Candidate 04)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-user-onboarding",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-0123456789ab",
+      "name": "User Created Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "delta-user-onboarding"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "fullName",
+              "value": "={{ $json.body.fullName }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "role",
+              "value": "={{ $json.body.role || 'Member' }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "welcomePackId",
+              "value": "=WP-{{ Math.floor(1000 + Math.random() * 9000) }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "onboardingStepsTotal",
+              "value": 4,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-4b8c-9d0e-123456789abc",
+      "name": "Profile Normalizer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.role }}",
+              "rightValue": "Superadmin",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-a7b8-4c9d-0e1f-23456789abcd",
+      "name": "Role Router (Superadmin vs Member)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "channel",
+              "value": "#superadmin-notifications",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "securityAuditRequired",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "3",
+              "name": "message",
+              "value": "=🚨 High-privilege account provisioned: {{ $json.fullName }} ({{ $json.email }}) granted Superadmin role.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-4d0e-1f2a-3456789abcde",
+      "name": "Security Notice Generator",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "channel",
+              "value": "#team-announcements",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "securityAuditRequired",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "3",
+              "name": "message",
+              "value": "=👋 Welcome {{ $json.fullName }} to the workspace! Excited to have you on board.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-4e1f-2a3b-456789abcdef",
+      "name": "Standard Welcome Generator",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"onboarding_pipeline_triggered\",\n  \"welcomePackId\": \"{{ $json.welcomePackId }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"channel\": \"{{ $json.channel }}\",\n  \"securityAuditRequired\": {{ $json.securityAuditRequired }},\n  \"onboardingStepsRemaining\": 3,\n  \"message\": \"{{ $json.message }}\",\n  \"processedAt\": \"{{ $now.toISO() }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "f6a7b8c9-d0e1-4f2a-3b4c-56789abcdef0",
+      "name": "Return Onboarding Confirmation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1240, 300]
+    }
+  ],
+  "connections": {
+    "User Created Webhook": {
+      "main": [
+        [
+          {
+            "node": "Profile Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Profile Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Role Router (Superadmin vs Member)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Role Router (Superadmin vs Member)": {
+      "main": [
+        [
+          {
+            "node": "Security Notice Generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Standard Welcome Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Notice Generator": {
+      "main": [
+        [
+          {
+            "node": "Return Onboarding Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standard Welcome Generator": {
+      "main": [
+        [
+          {
+            "node": "Return Onboarding Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

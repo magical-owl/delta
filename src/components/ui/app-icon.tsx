@@ -20,6 +20,8 @@ export type IconName =
   | "angle-right"
   | "arrow-left"
   | "arrow-right"
+  | "arrow-down"
+  | "arrow-up"
   | "screwdriver-wrench"
   | "circle-check"
   | "triangle-exclamation"
@@ -59,6 +61,7 @@ export type IconName =
   | "sliders"
   | "lock"
   | "envelope"
+  | "bolt"
   | "right-to-bracket"
   | "right-from-bracket"
   | "circle-user";

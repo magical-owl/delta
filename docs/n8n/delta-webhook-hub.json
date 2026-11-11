@@ -1,0 +1,271 @@
+{
+  "name": "Delta Dashboard - Webhook Automation Hub (Candidate 01)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e4299b90-1c6f-40e1-b851-91ea6b67df21",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "delta-events"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "workspace.health_check",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "security",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "7849c719-f0bd-4fa6-8473-b3c1eeffbe1d",
+      "name": "Route by Event Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "status",
+              "value": "healthy",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "message",
+              "value": "Workspace health telemetry processed successfully.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "actionTaken",
+              "value": "Telemetry logged. No escalation required.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "50c82fb6-82ae-4c7b-9447-0d536df35b4c",
+      "name": "Process Health Check",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "status",
+              "value": "alert_triggered",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "message",
+              "value": "Critical security event routed for SecOps escalation.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "actionTaken",
+              "value": "Forwarded to on-call notification channel.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "62fb7692-7473-41bb-b695-1f9dfa2a688b",
+      "name": "Process Security Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 320]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "status",
+              "value": "generic_logged",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "message",
+              "value": "Standard event acknowledged and archived.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "actionTaken",
+              "value": "Event archived into audit storage.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da14c414-b1b7-4c4c-9f89-8d77a285d852",
+      "name": "Process Generic Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 460]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"acknowledged\",\n  \"event\": \"{{ $('Webhook Trigger').item.json.body.event }}\",\n  \"actor\": \"{{ $('Webhook Trigger').item.json.body.actor?.email }}\",\n  \"n8nResult\": {\n    \"status\": \"{{ $json.status }}\",\n    \"message\": \"{{ $json.message }}\",\n    \"actionTaken\": \"{{ $json.actionTaken }}\"\n  },\n  \"processedAt\": \"{{ $now.toISO() }}\",\n  \"executionId\": \"{{ $execution.id }}\"\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "X-Powered-By",
+                "value": "n8n-delta-integration"
+              }
+            ]
+          }
+        }
+      },
+      "id": "55f5223c-a9cf-4cb2-87a4-bb0642f88b01",
+      "name": "Respond to Delta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [980, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route by Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Event Type": {
+      "main": [
+        [
+          {
+            "node": "Process Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Security Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Generic Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Health Check": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Security Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Generic Event": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

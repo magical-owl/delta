@@ -1,0 +1,104 @@
+{
+  "name": "Delta Dashboard - AI Multi-Agent Task Orchestrator (Candidate 06)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-ai-orchestrator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e1a1b1c1-1111-4aaa-bbbb-000000000001",
+      "name": "AI Task Dispatcher Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "delta-ai-orchestrator"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "taskId",
+              "value": "=AI-TASK-{{ Math.floor(1000 + Math.random() * 9000) }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "primaryGoal",
+              "value": "={{ $json.body.goal || 'Analyze incoming repository activity and flag security anomalies' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "modelAssigned",
+              "value": "={{ $json.body.model || 'claude-3-7-sonnet' }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "subagentsAssigned",
+              "value": "={{ [ 'Codebase Researcher', 'Threat Pattern Evaluator', 'Compliance Validator' ] }}",
+              "type": "array"
+            },
+            {
+              "id": "5",
+              "name": "estimatedSteps",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1a1b1c1-2222-4aaa-bbbb-000000000002",
+      "name": "Task Decomposition & Agent Planner",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"multi_agent_execution_queued\",\n  \"taskId\": \"{{ $json.taskId }}\",\n  \"assignedModel\": \"{{ $json.modelAssigned }}\",\n  \"subagents\": {{ JSON.stringify($json.subagentsAssigned) }},\n  \"plannedSteps\": {{ $json.estimatedSteps }},\n  \"synthesizedConclusion\": \"Dispatched subagent cluster with task goal: {{ $json.primaryGoal }}\",\n  \"dispatchTimestamp\": \"{{ $now.toISO() }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "e1a1b1c1-3333-4aaa-bbbb-000000000003",
+      "name": "Return Multi-Agent Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [760, 300]
+    }
+  ],
+  "connections": {
+    "AI Task Dispatcher Webhook": {
+      "main": [
+        [
+          {
+            "node": "Task Decomposition & Agent Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Decomposition & Agent Planner": {
+      "main": [
+        [
+          {
+            "node": "Return Multi-Agent Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

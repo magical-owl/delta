@@ -1,0 +1,326 @@
+{
+  "name": "Delta Dashboard - Security Alert Escalation (Candidate 03)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-security-alerts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "11223344-5566-47a8-b9c0-aabbccddeeff",
+      "name": "Security Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "delta-security-alerts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "severityLevel",
+              "value": "={{ $json.body.severity || 'CRITICAL' }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "incidentTicket",
+              "value": "=SEC-{{ Math.floor(1000 + Math.random() * 9000) }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "threatScore",
+              "value": "={{ $json.body.severity === 'CRITICAL' ? 95 : ($json.body.severity === 'HIGH' ? 80 : 45) }}",
+              "type": "number"
+            },
+            {
+              "id": "4",
+              "name": "targetSecOpsChannel",
+              "value": "={{ $json.body.severity === 'CRITICAL' ? '#secops-p0-incidents' : '#security-audit-feed' }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "autoMitigation",
+              "value": "={{ $json.body.severity === 'CRITICAL' ? 'IP Quarantined in Redis Rate Limiter' : 'Enhanced Audit Logging Activated' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "22334455-6677-48b9-c0d1-bbccddeeff00",
+      "name": "SecOps Threat Evaluator",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severityLevel }}",
+                    "rightValue": "CRITICAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severityLevel }}",
+                    "rightValue": "HIGH",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "33445566-7788-49c0-d1e2-ccddeeff0011",
+      "name": "Route by Threat Level",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "escalationAction",
+              "value": "PAGED_ONCALL_SECOPS",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "dispatchMessage",
+              "value": "Critical violation detected: Triggered emergency PagerDuty alert & sent high-priority webhook to #secops-p0-incidents.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "remediationStatus",
+              "value": "Attacker IP temporary ban requested.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "44556677-8899-40d1-e2f3-ddeeff001122",
+      "name": "Execute Critical Escalation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "escalationAction",
+              "value": "NOTIFIED_SECURITY_TEAM",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "dispatchMessage",
+              "value": "High severity event flagged in #security-audit-feed for daily review.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "remediationStatus",
+              "value": "Target account flagged for 2FA re-verification.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "55667788-9900-41e2-f3a4-eeff00112233",
+      "name": "Execute High Alert Notice",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 320]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "escalationAction",
+              "value": "LOGGED_TO_SIEM",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "dispatchMessage",
+              "value": "Standard audit anomaly archived to SIEM compliance lake.",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "remediationStatus",
+              "value": "No immediate containment required.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "66778899-0011-42f3-a4b5-ff0011223344",
+      "name": "Archive Routine Anomaly",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 460]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"incident_acknowledged\",\n  \"incidentTicket\": \"{{ $('SecOps Threat Evaluator').item.json.incidentTicket }}\",\n  \"severityLevel\": \"{{ $('SecOps Threat Evaluator').item.json.severityLevel }}\",\n  \"threatScore\": {{ $('SecOps Threat Evaluator').item.json.threatScore }},\n  \"targetChannel\": \"{{ $('SecOps Threat Evaluator').item.json.targetSecOpsChannel }}\",\n  \"escalationAction\": \"{{ $json.escalationAction }}\",\n  \"dispatchMessage\": \"{{ $json.dispatchMessage }}\",\n  \"autoMitigation\": \"{{ $('SecOps Threat Evaluator').item.json.autoMitigation }}\",\n  \"attackerIp\": \"{{ $('Security Webhook Trigger').item.json.body.actor?.ipAddress }}\",\n  \"processedAt\": \"{{ $now.toISO() }}\",\n  \"executionId\": \"{{ $execution.id }}\"\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "X-Powered-By",
+                "value": "n8n-delta-security-escalation"
+              }
+            ]
+          }
+        }
+      },
+      "id": "77889900-1122-43a4-b5c6-001122334455",
+      "name": "Respond to Delta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1220, 300]
+    }
+  ],
+  "connections": {
+    "Security Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "SecOps Threat Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SecOps Threat Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Route by Threat Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Threat Level": {
+      "main": [
+        [
+          {
+            "node": "Execute Critical Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute High Alert Notice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Archive Routine Anomaly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Critical Escalation": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute High Alert Notice": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Routine Anomaly": {
+      "main": [
+        [
+          {
+            "node": "Respond to Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

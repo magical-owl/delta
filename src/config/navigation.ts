@@ -54,6 +54,61 @@ export const adminNavigation: NavEntry[] = [
     description: "Compliance exports, audit logs, and scheduled reports.",
   },
   {
+    groupTitle: "Automations (n8n)",
+    icon: "bolt",
+    items: [
+      {
+        title: "Hub Overview",
+        href: "/dashboard/automations",
+        icon: "layer-group",
+        description: "Browse all n8n automations grouped by complexity tier.",
+        badge: "Tiers",
+      },
+      {
+        title: "Webhook Tester",
+        href: "/dashboard/automations/webhooks",
+        icon: "arrows-rotate",
+        description: "Basic: Direct outbound & inbound webhook testing console.",
+        badge: "Basic",
+      },
+      {
+        title: "User Onboarding",
+        href: "/dashboard/automations/onboarding",
+        icon: "users",
+        description: "Basic: Welcome email dispatch and Slack team announcement.",
+        badge: "Basic",
+      },
+      {
+        title: "Inquiry Triage",
+        href: "/dashboard/automations/inquiries",
+        icon: "envelope",
+        description: "Intermediate: AI lead scoring, team routing, and SLA tracking.",
+        badge: "Interm.",
+      },
+      {
+        title: "Audit Archival",
+        href: "/dashboard/automations/compliance",
+        icon: "box-archive",
+        description: "Intermediate: Scheduled compliance exports to S3 / Cloud Storage.",
+        badge: "Interm.",
+      },
+      {
+        title: "Security Escalation",
+        href: "/dashboard/automations/security",
+        icon: "shield-halved",
+        description: "Advanced: Real-time threat detection, PagerDuty, and IP ban.",
+        badge: "Adv.",
+      },
+      {
+        title: "AI Orchestrator",
+        href: "/dashboard/automations/ai-tasks",
+        icon: "sliders",
+        description: "Advanced: Multi-agent LLM analysis and bi-directional callback.",
+        badge: "Adv.",
+      },
+    ],
+  },
+  {
     groupTitle: "Component Library",
     icon: "cube",
     items: [
@@ -150,6 +205,36 @@ export const routeTitleMap: Record<string, { title: string; subtitle: string }> 
   "/dashboard/reports": {
     title: "Reports & Audits",
     subtitle: "Compliance certificates, audit trails, and export logs",
+  },
+  "/dashboard/automations": {
+    title: "n8n Automation Hub",
+    subtitle: "Enterprise workflow automations grouped by complexity tier",
+  },
+  "/dashboard/automations/webhooks": {
+    title: "Webhook Tester Console",
+    subtitle: "Basic Tier: Outbound and inbound webhook testing and dispatch logs",
+  },
+  "/dashboard/automations/onboarding": {
+    title: "User Onboarding & Welcome Flow",
+    subtitle: "Basic Tier: Automated account invitation emails and Slack greetings",
+  },
+  "/dashboard/automations/inquiries": {
+    title: "Inquiry Triage Pipeline",
+    subtitle: "Intermediate Tier: AI classification, team routing, and SLA tracking",
+  },
+  "/dashboard/automations/compliance": {
+    title: "Compliance & Audit Archival",
+    subtitle: "Intermediate Tier: Scheduled audit trail compression and cloud archival",
+  },
+  "/dashboard/automations/security": {
+    title: "Security Alert Escalation",
+    subtitle:
+      "Advanced Tier: Automated threat detection, PagerDuty on-call, and IP quarantine",
+  },
+  "/dashboard/automations/ai-tasks": {
+    title: "AI Multi-Agent Task Orchestrator",
+    subtitle:
+      "Advanced Tier: LLM reasoning loops, external tool calling, and structured synthesis",
   },
   "/dashboard/components": {
     title: "Component Library",
