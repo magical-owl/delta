@@ -42,16 +42,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
     container_name: delta_web
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
     env_file:
       - .env
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DATABASE_URL: postgresql://${POSTGRES_USER:-delta}:${POSTGRES_PASSWORD:-delta_dev_password}@postgres:5432/${POSTGRES_DB:-delta}
       REDIS_URL: redis://redis:6379
+      WATCHPACK_POLLING: "true"
     depends_on:
       postgres:
         condition: service_healthy

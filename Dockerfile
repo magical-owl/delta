@@ -12,6 +12,18 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
+# Stage 2.5: Development runner for live hot-reloading
+FROM base AS dev
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+EXPOSE 3000
+CMD ["pnpm", "dev"]
+
 # Stage 3: Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app

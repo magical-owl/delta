@@ -83,11 +83,18 @@ docker build -t delta-scaffold:latest .
 
 ### Run with Docker Compose
 
-The `docker-compose.yml` launches PostgreSQL 17, Redis 7, and the Next.js standalone application with network health dependencies:
+- **Development with Live Hot-Reloading** (`docker-compose.yml`):
+  Mounts your local workspace files into the container so changes to `src/` reflect immediately in the browser without rebuilding:
 
-```bash
-docker compose up --build -d
-```
+  ```bash
+  docker compose up --build -d
+  ```
+
+- **Production Standalone Deployment** (`docker-compose.prod.yml`):
+  Runs the minimal hardened production image with `node server.js`:
+  ```bash
+  docker compose -f docker-compose.prod.yml up --build -d
+  ```
 
 Services initialized:
 

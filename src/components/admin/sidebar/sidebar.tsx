@@ -7,6 +7,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { SidebarBrand } from "@/components/admin/sidebar/sidebar-brand";
 import { SidebarNavigation } from "@/components/admin/sidebar/sidebar-navigation";
 import { SidebarToggle } from "@/components/admin/sidebar/sidebar-toggle";
+import { SidebarLogout } from "@/components/admin/sidebar/sidebar-logout";
 
 export function Sidebar() {
   const { isCollapsed, toggleCollapsed, isMobileOpen, closeMobile } = useSidebar();
@@ -31,8 +32,9 @@ export function Sidebar() {
           <SidebarNavigation isCollapsed={isCollapsed} />
         </div>
 
-        {/* Bottom toggle section */}
-        <div className="border-t border-[#192E32]/80 p-3">
+        {/* Bottom section: logout + collapse toggle */}
+        <div className="border-t border-[#192E32]/80 p-3 space-y-1">
+          <SidebarLogout isCollapsed={isCollapsed} />
           <SidebarToggle
             isCollapsed={isCollapsed}
             onToggle={toggleCollapsed}
@@ -74,6 +76,11 @@ export function Sidebar() {
             {/* Scrollable nav */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1">
               <SidebarNavigation isCollapsed={false} onNavigate={closeMobile} />
+            </div>
+
+            {/* Bottom section: logout */}
+            <div className="border-t border-[#192E32]/80 p-3">
+              <SidebarLogout isCollapsed={false} />
             </div>
           </div>
         </>

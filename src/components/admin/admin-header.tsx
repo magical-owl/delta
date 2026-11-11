@@ -5,6 +5,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { cn } from "@/lib/utils/cn";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { NotificationsPopover } from "@/components/admin/header/notifications-popover";
+import { UserMenuPopover } from "@/components/admin/header/user-menu-popover";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export interface AdminHeaderProps {
@@ -52,6 +53,7 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       <div className="flex items-center gap-2">
         <ThemeToggle />
         <NotificationsPopover />
+        <UserMenuPopover />
       </div>
     </header>
   );

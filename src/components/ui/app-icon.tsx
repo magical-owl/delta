@@ -59,7 +59,9 @@ export type IconName =
   | "sliders"
   | "lock"
   | "envelope"
-  | "right-to-bracket";
+  | "right-to-bracket"
+  | "right-from-bracket"
+  | "circle-user";
 
 export type IconSize = "xs" | "sm" | "md" | "lg" | "xl";
 
