@@ -173,6 +173,31 @@ const AUTOMATION_CATALOG: AutomationItem[] = [
       "Streams structured markdown analysis back to dashboard",
     ],
   },
+  {
+    id: "video-radar",
+    tier: "advanced",
+    tierLabel: "Advanced (Tier 3)",
+    badgeVariant: "destructive",
+    title: "Trending Video Radar & Script Generator",
+    summary:
+      "Creator automation that fetches trending YouTube/TikTok videos, computes outlier scores (views vs. subscribers), extracts winning hooks, and generates original scripts + Creatomate/ElevenLabs render payloads.",
+    href: "/dashboard/automations/video-radar",
+    icon: "video",
+    nodeCount: "6–9 Nodes",
+    workflowNodes: [
+      "Niche Webhook",
+      "Trend Fetcher",
+      "Outlier Scorer",
+      "AI Script & Hooks",
+      "Render Payload",
+    ],
+    features: [
+      "Scores viral outliers (views/subscriber multiplier)",
+      "Extracts 3-second hooks & viewer comment gaps",
+      "Writes original scripts & B-roll shot lists",
+      "Outputs Creatomate / Shotstack / ElevenLabs render JSON",
+    ],
+  },
 ];
 
 export default function AutomationsOverviewPage() {
@@ -190,7 +215,7 @@ export default function AutomationsOverviewPage() {
         subtitle="Explore ready-to-run webhook automations designed for the Delta platform, categorized by architectural complexity."
       >
         <AppBadge variant="info" leftIcon="bolt">
-          6 Active Workflows
+          {AUTOMATION_CATALOG.length} Active Workflows
         </AppBadge>
       </PageHeading>
 
@@ -253,7 +278,7 @@ export default function AutomationsOverviewPage() {
           <div className="flex items-center justify-between mb-2">
             <AppBadge variant="destructive">Tier 3: Advanced</AppBadge>
             <span className="text-xs font-mono text-[var(--text-muted)]">
-              2 Workflows
+              3 Workflows
             </span>
           </div>
           <div className="text-sm font-semibold text-[var(--foreground)] mb-1">
@@ -277,7 +302,7 @@ export default function AutomationsOverviewPage() {
               : "text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
           }`}
         >
-          All Automations (6)
+          All Automations (7)
         </button>
         <button
           type="button"
@@ -310,7 +335,7 @@ export default function AutomationsOverviewPage() {
               : "text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
           }`}
         >
-          Advanced Tier (2)
+          Advanced Tier (3)
         </button>
       </div>
 

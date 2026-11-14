@@ -106,6 +106,14 @@ export const adminNavigation: NavEntry[] = [
         description: "Advanced: Multi-agent LLM analysis and bi-directional callback.",
         badge: "Adv.",
       },
+      {
+        title: "Video Radar",
+        href: "/dashboard/automations/video-radar",
+        icon: "video",
+        description:
+          "Advanced: Trending video outlier analysis, AI scripts, and render JSON.",
+        badge: "Adv.",
+      },
     ],
   },
   {
@@ -235,6 +243,11 @@ export const routeTitleMap: Record<string, { title: string; subtitle: string }> 
     title: "AI Multi-Agent Task Orchestrator",
     subtitle:
       "Advanced Tier: LLM reasoning loops, external tool calling, and structured synthesis",
+  },
+  "/dashboard/automations/video-radar": {
+    title: "Trending Video Radar & Script Generator",
+    subtitle:
+      "Advanced Tier: Outlier trend analysis, hook extraction, AI scriptwriting, and video render payloads",
   },
   "/dashboard/components": {
     title: "Component Library",

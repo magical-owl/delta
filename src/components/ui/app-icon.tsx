@@ -64,7 +64,9 @@ export type IconName =
   | "bolt"
   | "right-to-bracket"
   | "right-from-bracket"
-  | "circle-user";
+  | "circle-user"
+  | "video"
+  | "fire";
 
 export type IconSize = "xs" | "sm" | "md" | "lg" | "xl";
 

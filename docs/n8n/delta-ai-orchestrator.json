@@ -62,9 +62,17 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"status\": \"multi_agent_execution_queued\",\n  \"taskId\": \"{{ $json.taskId }}\",\n  \"assignedModel\": \"{{ $json.modelAssigned }}\",\n  \"subagents\": {{ JSON.stringify($json.subagentsAssigned) }},\n  \"plannedSteps\": {{ $json.estimatedSteps }},\n  \"synthesizedConclusion\": \"Dispatched subagent cluster with task goal: {{ $json.primaryGoal }}\",\n  \"dispatchTimestamp\": \"{{ $now.toISO() }}\"\n}",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  status: 'multi_agent_execution_queued',\n  taskId: $json.taskId || 'AI-TASK-001',\n  assignedModel: $json.modelAssigned || 'claude-3-7-sonnet',\n  subagents: $json.subagentsAssigned || ['Codebase Researcher', 'Threat Pattern Evaluator'],\n  plannedSteps: $json.estimatedSteps || 5,\n  synthesizedConclusion: 'Dispatched subagent cluster with task goal: ' + ($json.primaryGoal || 'Autonomous review'),\n  dispatchTimestamp: $now.toISO()\n}) }}",
         "options": {
-          "responseCode": 200
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
         }
       },
       "id": "e1a1b1c1-3333-4aaa-bbbb-000000000003",

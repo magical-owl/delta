@@ -112,7 +112,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "includeOtherFields": true
+        }
       },
       "id": "d4e5f6a7-b8c9-4d0e-1f2a-3456789abcde",
       "name": "Security Notice Generator",
@@ -144,7 +146,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "includeOtherFields": true
+        }
       },
       "id": "e5f6a7b8-c9d0-4e1f-2a3b-456789abcdef",
       "name": "Standard Welcome Generator",
@@ -155,9 +159,17 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"status\": \"onboarding_pipeline_triggered\",\n  \"welcomePackId\": \"{{ $json.welcomePackId }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"channel\": \"{{ $json.channel }}\",\n  \"securityAuditRequired\": {{ $json.securityAuditRequired }},\n  \"onboardingStepsRemaining\": 3,\n  \"message\": \"{{ $json.message }}\",\n  \"processedAt\": \"{{ $now.toISO() }}\"\n}",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  status: 'onboarding_pipeline_triggered',\n  welcomePackId: $json.welcomePackId || $('Profile Normalizer').item?.json?.welcomePackId || 'WP-0001',\n  email: $json.email || $('Profile Normalizer').item?.json?.email || 'user@delta.local',\n  channel: $json.channel || '#team-announcements',\n  securityAuditRequired: Boolean($json.securityAuditRequired),\n  onboardingStepsRemaining: 3,\n  message: $json.message || 'Welcome to Delta',\n  processedAt: $now.toISO()\n}) }}",
         "options": {
-          "responseCode": 200
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
         }
       },
       "id": "f6a7b8c9-d0e1-4f2a-3b4c-56789abcdef0",
