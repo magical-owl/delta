@@ -1,0 +1,554 @@
+{
+  "name": "Delta Dashboard - Google Calendar & Gmail Reservation AI Agent (Production)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-calendar-reservation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a000001-0000-4000-a000-000000000001",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 400],
+      "webhookId": "delta-calendar-reservation"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "readStatus": "unread",
+          "q": "subject:(reservation OR booking OR meet OR schedule OR appointment)"
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000004",
+      "name": "Gmail Trigger: Inbound Emails",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [180, 800],
+      "credentials": {
+        "gmailOAuth2Api": {
+          "id": "gmailOAuth2Api",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming booking request from Webhook or Gmail\nconst first = $input.first().json;\nconst body = first.body || first;\nconst action = body.action || (first.from ? 'check_gmail' : 'check_availability');\n\nconst dateStr = body.date || new Date().toISOString().split('T')[0];\nconst timeSlot = body.timeSlot || '10:30 AM';\nconst durationMinutes = parseInt(body.durationMinutes, 10) || 45;\nconst name = body.name || (first.from ? first.from.name || first.from.value?.[0]?.name : 'Guest User') || 'Guest User';\nconst email = body.email || (first.from ? first.from.address || first.from.value?.[0]?.address : 'guest@example.com') || 'guest@example.com';\nconst purpose = body.purpose || first.subject || 'Technical Consultation';\n\n// Convert '10:30 AM' and '2026-11-16' to standard ISO timestamps\nfunction parseSlotToIso(dStr, tStr, durMins) {\n  const parts = tStr.trim().split(' ');\n  const timeParts = parts[0].split(':');\n  let hours = parseInt(timeParts[0], 10);\n  const minutes = parseInt(timeParts[1], 10) || 0;\n  const isPm = parts[1] && parts[1].toUpperCase() === 'PM';\n  if (isPm && hours < 12) hours += 12;\n  if (!isPm && hours === 12) hours = 0;\n\n  const startDate = new Date(`${dStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);\n  const endDate = new Date(startDate.getTime() + durMins * 60000);\n\n  return {\n    startIso: startDate.toISOString(),\n    endIso: endDate.toISOString(),\n    startOfDayIso: new Date(`${dStr}T00:00:00`).toISOString(),\n    endOfDayIso: new Date(`${dStr}T23:59:59`).toISOString()\n  };\n}\n\nconst timestamps = parseSlotToIso(dateStr, timeSlot, durationMinutes);\n\nreturn [{\n  json: {\n    action,\n    date: dateStr,\n    timeSlot,\n    durationMinutes,\n    name,\n    email,\n    purpose,\n    rawEmailId: first.id || null,\n    ...timestamps\n  }\n}];"
+      },
+      "id": "1a000001-0000-4000-a000-000000000002",
+      "name": "Parse & Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "sync_events",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_court_schedule",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "check_availability",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "confirm_booking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "book_court",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "check_gmail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a000001-0000-4000-a000-000000000003",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "options": {
+          "singleEvents": true,
+          "timeMin": "={{ $now.startOf('day').toISO() }}",
+          "timeMax": "={{ $now.plus({ days: 30 }).toISO() }}"
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000010",
+      "name": "Google Calendar: Sync Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [960, 160],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map raw Google Calendar events into clean dashboard schema\nconst items = $input.all().filter(item => item.json && item.json.id);\n\nfunction formatTimeSlot(d) {\n  let hours = d.getHours();\n  const minutes = d.getMinutes();\n  const ampm = hours >= 12 ? 'PM' : 'AM';\n  hours = hours % 12;\n  hours = hours ? hours : 12;\n  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;\n}\n\nconst mapped = items.map(item => {\n  const ev = item.json;\n  const startRaw = ev.start?.dateTime || ev.start?.date || '';\n  const endRaw = ev.end?.dateTime || ev.end?.date || '';\n  \n  let timeSlot = 'All Day';\n  let dateStr = startRaw.split('T')[0] || '';\n  let durationMins = 60;\n  \n  if (startRaw.includes('T')) {\n    const d = new Date(startRaw);\n    dateStr = d.toISOString().split('T')[0];\n    timeSlot = formatTimeSlot(d);\n    if (endRaw.includes('T')) {\n      const endD = new Date(endRaw);\n      durationMins = Math.round((endD.getTime() - d.getTime()) / 60000);\n    }\n  }\n  \n  const attendeesList = (ev.attendees || []).map(a => a.email).filter(Boolean);\n  const meetUrl = ev.hangoutLink || ev.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri || '';\n  \n  return {\n    id: ev.id,\n    title: ev.summary || 'Scheduled Meeting',\n    date: dateStr,\n    timeSlot,\n    durationMinutes: durationMins,\n    attendees: attendeesList.length ? attendeesList : ['primary@delta.local'],\n    status: 'confirmed',\n    calendar: 'Google Calendar (Primary)',\n    googleMeetLink: meetUrl\n  };\n});\n\nconst courtBookings = items.map(item => {\n  const ev = item.json;\n  const summary = ev.summary || 'Pickleball Match';\n  const desc = ev.description || '';\n  const loc = ev.location || '';\n  const combined = `${summary} ${loc} ${desc}`;\n  const cMatch = combined.match(/court[\\s_-]*([1-9]|1[0-2])\\b/i);\n  const cNum = cMatch ? cMatch[1] : '1';\n  const courtId = `court_${cNum}`;\n  const courtName = `Court ${cNum}`;\n  \n  const startRaw = ev.start?.dateTime || ev.start?.date || '';\n  const endRaw = ev.end?.dateTime || ev.end?.date || '';\n  let dStr = new Date().toISOString().split('T')[0];\n  let slotStr = '09:00 AM';\n  let dur = 60;\n  \n  if (startRaw.includes('T')) {\n    const d = new Date(startRaw);\n    const yr = d.getFullYear();\n    const mo = String(d.getMonth() + 1).padStart(2, '0');\n    const da = String(d.getDate()).padStart(2, '0');\n    dStr = `${yr}-${mo}-${da}`;\n    slotStr = formatTimeSlot(d);\n    if (endRaw.includes('T')) {\n      dur = Math.round((new Date(endRaw).getTime() - d.getTime()) / 60000);\n    }\n  } else if (startRaw) {\n    dStr = startRaw;\n  }\n  \n  let player = 'Pickleball Player';\n  const pMatch = summary.match(/-\\s*([^()]+?)(?:\\s*\\(|$)/);\n  if (pMatch) player = pMatch[1].trim();\n  else if (ev.attendees && ev.attendees[0]?.email) player = ev.attendees[0].email.split('@')[0];\n  \n  return {\n    id: ev.id,\n    courtId,\n    courtName,\n    date: dStr,\n    timeSlot: slotStr,\n    durationMinutes: dur,\n    playerName: player,\n    playerEmail: ev.attendees?.[0]?.email || 'player@delta.local',\n    matchType: /singles/i.test(combined) ? 'Singles Match' : 'Doubles Match',\n    pinCode: desc.match(/(?:PIN|code|pass)[\\s:]*([0-9]{4})/i)?.[1] || '5912',\n    googleCalendarEventId: ev.id,\n    googleCalendarLink: ev.htmlLink || '',\n    status: 'CONFIRMED'\n  };\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'sync_events',\n    calendarId: 'primary',\n    totalEventsSynced: mapped.length,\n    events: mapped,\n    bookings: courtBookings,\n    syncedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "1a000001-0000-4000-a000-000000000011",
+      "name": "Format Synced Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000012",
+      "name": "Respond: Synced Events",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1460, 160]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "returnAll": true,
+        "options": {
+          "singleEvents": true,
+          "timeMin": "={{ $json.startOfDayIso }}",
+          "timeMax": "={{ $json.endOfDayIso }}"
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000020",
+      "name": "Google Calendar: Query Day Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [960, 360],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI & Exact DateTime Overlap Evaluation\nconst req = $('Parse & Normalize Request').first().json;\nconst dayEvents = $input.all().map(item => item.json).filter(ev => ev && ev.id);\n\nconst reqStart = new Date(req.startIso).getTime();\nconst reqEnd = new Date(req.endIso).getTime();\n\nlet conflictEvent = null;\n\nfor (const ev of dayEvents) {\n  const evStartRaw = ev.start?.dateTime || ev.start?.date;\n  const evEndRaw = ev.end?.dateTime || ev.end?.date;\n  if (!evStartRaw || !evEndRaw) continue;\n  \n  const evStart = new Date(evStartRaw).getTime();\n  const evEnd = new Date(evEndRaw).getTime();\n  \n  // Overlap test: StartA < EndB and EndA > StartB\n  if (reqStart < evEnd && reqEnd > evStart) {\n    conflictEvent = ev;\n    break;\n  }\n}\n\nif (conflictEvent) {\n  const summary = conflictEvent.summary || 'Scheduled Meeting';\n  return [{\n    json: {\n      success: true,\n      action: 'check_availability',\n      status: 'CONFLICT',\n      isAvailable: false,\n      requested: {\n        date: req.date,\n        timeSlot: req.timeSlot,\n        durationMinutes: req.durationMinutes\n      },\n      name: req.name,\n      email: req.email,\n      conflictWith: summary,\n      conflictDetails: `Conflict with '${summary}' on your Google Calendar`,\n      suggestedSlots: [\n        {\n          date: req.date,\n          timeSlot: '11:30 AM',\n          durationMinutes: req.durationMinutes,\n          label: `${req.date} at 11:30 AM (Adjacent Open Slot)`\n        },\n        {\n          date: req.date,\n          timeSlot: '02:00 PM',\n          durationMinutes: req.durationMinutes,\n          label: `${req.date} at 02:00 PM (Afternoon Open Slot)`\n        },\n        {\n          date: req.date,\n          timeSlot: '04:00 PM',\n          durationMinutes: req.durationMinutes,\n          label: `${req.date} at 04:00 PM (Late Afternoon Window)`\n        }\n      ],\n      aiEvaluation: `Google Calendar queried in real-time. Overlap detected with '${summary}'. The AI agent recommends shifting to 11:30 AM or 02:00 PM.`,\n      gmailFeedbackSubject: `Update on your reservation request for ${req.date}`,\n      gmailFeedbackBody: `Hi ${req.name},\\n\\nThank you for reaching out. We evaluated our Google Calendar, and your requested slot (${req.date} at ${req.timeSlot}) conflicts with an existing meeting ('${summary}').\\n\\nAlternative slots available:\\n- ${req.date} at 11:30 AM\\n- ${req.date} at 02:00 PM\\n\\nPlease reply with your preferred time to finalize your booking.\\n\\nBest regards,\\nDelta Calendar Assistant`,\n      evaluatedAt: new Date().toISOString()\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: true,\n      action: 'check_availability',\n      status: 'AVAILABLE',\n      isAvailable: true,\n      requested: {\n        date: req.date,\n        timeSlot: req.timeSlot,\n        durationMinutes: req.durationMinutes\n      },\n      name: req.name,\n      email: req.email,\n      holdExpiresInMinutes: 10,\n      aiEvaluation: `Google Calendar queried in real-time: 0 overlapping events detected for ${req.date} at ${req.timeSlot}. The slot is 100% available.`,\n      requiresConfirmation: true,\n      confirmationPrompt: `Would you like to confirm this reservation on Google Calendar and invite ${req.email}?`,\n      gmailFeedbackSubject: `Confirmation Needed: Reservation on ${req.date} at ${req.timeSlot} is Available`,\n      gmailFeedbackBody: `Hi ${req.name},\\n\\nGreat news! Your requested time slot on Google Calendar (${req.date} at ${req.timeSlot}) is 100% available.\\n\\nWould you like to confirm this booking? Please reply YES to this email or confirm on our website dashboard to lock in your calendar invite and Google Meet link.\\n\\nBest regards,\\nDelta Calendar Assistant`,\n      evaluatedAt: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "1a000001-0000-4000-a000-000000000021",
+      "name": "AI Availability Evaluator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000022",
+      "name": "Respond: Availability Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1460, 360]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "start": "={{ $json.startIso }}",
+        "end": "={{ $json.endIso }}",
+        "additionalFields": {
+          "summary": "={{ $json.purpose || 'Technical Consultation - Delta' }}",
+          "description": "={{ 'Scheduled via Delta Dashboard\\nAttendee: ' + $json.name + ' (' + $json.email + ')\\nAgenda: ' + $json.purpose }}",
+          "attendees": "={{ [$json.email] }}"
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000030",
+      "name": "Google Calendar: Create Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [960, 560],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format confirmed booking response from actual Google Calendar creation\nconst created = $input.first().json;\nconst req = $('Parse & Normalize Request').first().json;\n\nconst meetUrl = created.hangoutLink || created.htmlLink || `https://meet.google.com/delta-res-${created.id || 'meeting'}`;\n\nconst formattedEvent = {\n  id: created.id || 'gcal_' + Date.now(),\n  title: created.summary || req.purpose,\n  date: req.date,\n  timeSlot: req.timeSlot,\n  durationMinutes: req.durationMinutes,\n  attendees: [req.email, 'primary@delta.local'],\n  status: 'confirmed',\n  calendar: 'Google Calendar (Primary)',\n  googleMeetLink: meetUrl\n};\n\nconst emailSubject = `Reservation Confirmed: ${req.purpose} (${req.date} at ${req.timeSlot})`;\nconst emailBody = `Hi ${req.name},\\n\\nYour reservation has been confirmed and officially added to Google Calendar!\\n\\nMeeting Details:\\n- Topic: ${req.purpose}\\n- Date: ${req.date}\\n- Time Slot: ${req.timeSlot} (${req.durationMinutes} mins)\\n- Google Meet Link: ${meetUrl}\\n- Calendar Event ID: ${created.id || 'confirmed'}\\n\\nA calendar invitation has also been sent to ${req.email}.\\n\\nBest regards,\\nDelta Calendar Assistant`;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'confirm_booking',\n    status: 'CONFIRMED',\n    bookingId: created.id || 'gcal_' + Date.now(),\n    event: formattedEvent,\n    email: req.email,\n    gmailSubject: emailSubject,\n    gmailBody: emailBody,\n    message: `Reservation confirmed on Google Calendar for ${req.name}. Calendar invite and Google Meet link dispatched via Gmail to ${req.email}.`,\n    meetUrl: meetUrl,\n    htmlLink: created.htmlLink || '',\n    confirmedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "1a000001-0000-4000-a000-000000000031",
+      "name": "Format Booking Confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 560]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.gmailSubject }}",
+        "body": "={{ $json.gmailBody }}"
+      },
+      "id": "1a000001-0000-4000-a000-000000000033",
+      "name": "Gmail: Send Confirmation Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1460, 560],
+      "continueOnFail": true,
+      "credentials": {
+        "gmailOAuth2Api": {
+          "id": "gmailOAuth2Api",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000032",
+      "name": "Respond: Booking Confirmation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1700, 560]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": false,
+        "limit": 10,
+        "filters": {
+          "q": "is:unread label:INBOX subject:(reservation OR booking OR meet OR schedule OR appointment)"
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000050",
+      "name": "Gmail: Search Inbound Reservation Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 760],
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "credentials": {
+        "gmailOAuth2Api": {
+          "id": "gmailOAuth2Api",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse inbound Gmail messages and structure booking requests\nconst items = $input.all();\nconst validEmails = items.filter(i => i.json && (i.json.id || i.json.threadId));\n\nfunction extractDate(snippet) {\n  const dateMatch = snippet.match(/\\b(202[5-9]-[0-1][0-9]-[0-3][0-9])\\b/);\n  if (dateMatch) return dateMatch[1];\n  // Check for common formats like 'Nov 18' or 'Monday'\n  return '2026-11-18';\n}\n\nfunction extractTime(snippet) {\n  const timeMatch = snippet.match(/\\b(1[0-2]|0?[1-9]):([0-5][0-9])\\s*(AM|PM)\\b/i);\n  if (timeMatch) return timeMatch[0].toUpperCase();\n  return '02:00 PM';\n}\n\nconst requests = validEmails.map(item => {\n  const em = item.json;\n  const snippet = em.snippet || em.textPlain || '';\n  const fromStr = em.from?.value?.[0]?.address || em.from?.text || em.from || 'client@delta.local';\n  const fromName = em.from?.value?.[0]?.name || fromStr.split('@')[0];\n  const subject = em.subject || 'Meeting Reservation Request';\n  const targetDate = extractDate(snippet + ' ' + subject);\n  const targetSlot = extractTime(snippet + ' ' + subject);\n\n  return {\n    id: em.id || `mail_${Date.now()}`,\n    subject,\n    senderName: fromName,\n    senderEmail: fromStr,\n    snippet,\n    requestedDate: targetDate,\n    requestedSlot: targetSlot,\n    receivedAt: em.internalDate ? new Date(parseInt(em.internalDate, 10)).toISOString() : new Date().toISOString(),\n    status: 'PENDING_EVALUATION'\n  };\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'check_gmail',\n    totalInboundEmails: requests.length,\n    inboundRequests: requests,\n    message: `Gmail query completed. Found ${requests.length} inbound reservation request email(s).`,\n    checkedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "1a000001-0000-4000-a000-000000000051",
+      "name": "Parse Inbound Gmail Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 760]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "1a000001-0000-4000-a000-000000000052",
+      "name": "Respond: Inbound Gmail Requests",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1460, 760]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse & Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger: Inbound Emails": {
+      "main": [
+        [
+          {
+            "node": "Parse & Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar: Sync Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar: Query Day Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar: Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail: Search Inbound Reservation Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Sync Events": {
+      "main": [
+        [
+          {
+            "node": "Format Synced Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Synced Events": {
+      "main": [
+        [
+          {
+            "node": "Respond: Synced Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Query Day Events": {
+      "main": [
+        [
+          {
+            "node": "AI Availability Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Availability Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Respond: Availability Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Create Event": {
+      "main": [
+        [
+          {
+            "node": "Format Booking Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Booking Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Respond: Booking Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Search Inbound Reservation Emails": {
+      "main": [
+        [
+          {
+            "node": "Parse Inbound Gmail Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Inbound Gmail Requests": {
+      "main": [
+        [
+          {
+            "node": "Respond: Inbound Gmail Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

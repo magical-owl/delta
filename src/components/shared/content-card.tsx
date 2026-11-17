@@ -22,7 +22,9 @@ export function ContentCard({ title, children, footer, className }: ContentCardP
     >
       {title && (
         <div className="border-b border-[#DFE6E2]/70 px-6 py-4">
-          <h2 className="text-base font-semibold text-[#192E32]">{title}</h2>
+          <h2 suppressHydrationWarning className="text-base font-semibold text-[#192E32]">
+            {title}
+          </h2>
         </div>
       )}
       <div className="p-6">{children}</div>

@@ -1,0 +1,749 @@
+{
+  "name": "Delta Dashboard - Pickleball Court Reservation & Facility Manager (Production)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delta-pickleball-reservation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "pb000001-0000-4000-a000-000000000001",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 420],
+      "webhookId": "delta-pickleball-reservation"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": true,
+        "filters": {
+          "q": "subject:(pickleball OR court OR reservation OR booking) newer_than:1d"
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000002",
+      "name": "Gmail Trigger: Inbound Court Requests",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.1,
+      "position": [180, 840],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailOAuth2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming pickleball facility & booking payload from Webhook or Gmail\nconst first = $input.first().json;\nconst body = first.body || first;\nconst action = body.action || (first.from ? 'check_gmail' : 'check_availability');\n\n// Facility configuration with defensive bounds\nlet courtCount = parseInt(body.courtCount, 10);\nif (isNaN(courtCount) || courtCount < 1) courtCount = 4;\nif (courtCount > 12) courtCount = 12;\n\nconst openTime = body.openTime || '07:00'; // HH:mm 24hr format\nconst closeTime = body.closeTime || '22:00'; // HH:mm 24hr format\nconst slotDurationMinutes = parseInt(body.slotDurationMinutes, 10) || 60;\n\n// Booking parameters\nconst date = body.date || new Date().toISOString().split('T')[0];\nconst courtId = body.courtId || 'court_1';\nconst courtName = body.courtName || 'Court 1';\nlet rawTimeSlot = body.timeSlot || '9:00am-10:00am';\nconst durationMinutes = parseInt(body.durationMinutes, 10) || 60;\nconst playerName = body.playerName || (first.from ? first.from.name || first.from.value?.[0]?.name : 'Pickleball Player') || 'Pickleball Player';\nconst playerEmail = body.playerEmail || (first.from ? first.from.address || first.from.value?.[0]?.address : 'player@delta.local') || 'player@delta.local';\nconst playerPhone = body.playerPhone || '+1 (555) 019-2834';\nconst matchType = body.matchType || 'Doubles Match';\nconst rentals = Array.isArray(body.rentals) ? body.rentals : [];\n\n// Existing reservations passed from dashboard state for collision verification\nconst existingBookings = Array.isArray(body.existingBookings) ? body.existingBookings : [];\n\n// Parse start minutes from any format (e.g. '9:00am-10:00am', '09:00 AM', '9:00am', '09:00')\nfunction parseStartMinutes(tStr) {\n  if (!tStr) return 540;\n  const clean = tStr.trim();\n  const rangeMatch = clean.match(/^(\\d{1,2}):(\\d{2})\\s*(am|pm)?/i);\n  if (rangeMatch) {\n    let hours = parseInt(rangeMatch[1], 10);\n    const mins = parseInt(rangeMatch[2], 10);\n    const ap = rangeMatch[3] ? rangeMatch[3].toLowerCase() : null;\n    if (ap === 'pm' && hours < 12) hours += 12;\n    if (ap === 'am' && hours === 12) hours = 0;\n    return hours * 60 + mins;\n  }\n  const parts = clean.split(':');\n  let h = parseInt(parts[0], 10) || 0;\n  let m = parseInt(parts[1], 10) || 0;\n  if (/pm/i.test(clean) && h < 12) h += 12;\n  if (/am/i.test(clean) && h === 12) h = 0;\n  return h * 60 + m;\n}\n\n// Format minutes from midnight to '9:00am-10:00am'\nfunction formatSlotRange(startMins, durMins = 60) {\n  function fmt(total) {\n    const h24 = Math.floor(total / 60) % 24;\n    const mRem = total % 60;\n    const ampm = h24 >= 12 ? 'pm' : 'am';\n    const h12 = h24 % 12 || 12;\n    return `${h12}:${String(mRem).padStart(2, '0')}${ampm}`;\n  }\n  return `${fmt(startMins)}-${fmt(startMins + durMins)}`;\n}\n\nfunction time24ToMinutes(t24) {\n  const parts = (t24 || '07:00').split(':');\n  return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);\n}\n\nconst reqSlotMins = parseStartMinutes(rawTimeSlot);\nconst timeSlot = formatSlotRange(reqSlotMins, durationMinutes);\nconst facilityOpenMins = time24ToMinutes(openTime);\nconst facilityCloseMins = time24ToMinutes(closeTime);\n\n// Compute startIso and endIso with timezone awareness to prevent UTC shifts\nlet startIso = body.startIso;\nlet endIso = body.endIso;\n\nif (!startIso || !endIso) {\n  const startH = Math.floor(reqSlotMins / 60);\n  const startM = reqSlotMins % 60;\n  const endTotalMins = reqSlotMins + durationMinutes;\n  const endH = Math.floor(endTotalMins / 60);\n  const endM = endTotalMins % 60;\n  const pad = (n) => String(n).padStart(2, '0');\n  \n  const offset = body.timeZoneOffset || '+08:00';\n  startIso = `${date}T${pad(startH)}:${pad(startM)}:00${offset}`;\n  endIso = `${date}T${pad(endH)}:${pad(endM)}:00${offset}`;\n}\n\nreturn [{\n  json: {\n    action,\n    facilityConfig: {\n      courtCount,\n      openTime,\n      closeTime,\n      slotDurationMinutes,\n      facilityOpenMins,\n      facilityCloseMins\n    },\n    bookingRequest: {\n      date,\n      courtId,\n      courtName,\n      timeSlot,\n      durationMinutes,\n      playerName,\n      playerEmail,\n      playerPhone,\n      matchType,\n      rentals,\n      reqSlotMins,\n      startIso,\n      endIso\n    },\n    existingBookings\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000002",
+      "name": "Parse & Normalize Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 420]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update_config",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_court_schedule",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "sync_events",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "check_availability",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "book_court",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "confirm_booking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "check_gmail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "cancel_court",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "cancel_booking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "pb000001-0000-4000-a000-000000000003",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configure facility operating hours and slot rules\nconst { facilityConfig } = $input.first().json;\nconst { courtCount, openTime, closeTime, slotDurationMinutes } = facilityConfig;\n\nfunction time24ToMinutes(t24) {\n  const parts = (t24 || '07:00').split(':');\n  return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);\n}\n\nfunction formatSlotFromMinutes(startMins, durMins = 60) {\n  function fmt(total) {\n    const h24 = Math.floor(total / 60) % 24;\n    const mRem = total % 60;\n    const ampm = h24 >= 12 ? 'pm' : 'am';\n    const h12 = h24 % 12 || 12;\n    return `${h12}:${String(mRem).padStart(2, '0')}${ampm}`;\n  }\n  return `${fmt(startMins)}-${fmt(startMins + durMins)}`;\n}\n\nconst openMins = time24ToMinutes(openTime);\nconst closeMins = time24ToMinutes(closeTime);\nconst slots = [];\n\nfor (let m = openMins; m + slotDurationMinutes <= closeMins; m += slotDurationMinutes) {\n  const isPeak = m >= 17 * 60;\n  slots.push({\n    startMinutes: m,\n    durationMinutes: slotDurationMinutes,\n    slotStr: formatSlotFromMinutes(m, slotDurationMinutes),\n    isPeak,\n    baseRatePerHour: isPeak ? 35 : 25\n  });\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_config',\n    status: 'CONFIG_UPDATED',\n    facility: {\n      courtCount,\n      openTime,\n      closeTime,\n      slotDurationMinutes,\n      totalDailySlots: slots.length,\n      slots\n    },\n    message: `Facility updated: ${courtCount} courts active, ${openTime} to ${closeTime} (${slots.length} operating slots per court).`,\n    updatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000010",
+      "name": "Configure Facility & Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000011",
+      "name": "Respond: Config Updated",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1240, 160]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "options": {
+          "singleEvents": true,
+          "timeMin": "={{ $now.startOf('day').minus({ days: 7 }).toISO() }}",
+          "timeMax": "={{ $now.plus({ days: 30 }).toISO() }}"
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000019",
+      "name": "Google Calendar: Sync Court Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [960, 320],
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map raw Google Calendar events and existing bookings into live court schedule\nconst items = $input.all();\nconst gcalEvents = items.filter(i => i.json && (i.json.id || i.json.summary));\nconst prevNode = $('Parse & Normalize Parameters').first().json;\nconst { facilityConfig, bookingRequest, existingBookings } = prevNode;\nconst targetDate = bookingRequest.date || new Date().toISOString().split('T')[0];\n\nfunction formatSlotFromMinutes(startMins, durMins = 60) {\n  function fmt(total) {\n    const h24 = Math.floor(total / 60) % 24;\n    const mRem = total % 60;\n    const ampm = h24 >= 12 ? 'pm' : 'am';\n    const h12 = h24 % 12 || 12;\n    return `${h12}:${String(mRem).padStart(2, '0')}${ampm}`;\n  }\n  return `${fmt(startMins)}-${fmt(startMins + durMins)}`;\n}\n\nconst gcalBookings = gcalEvents.map(item => {\n  const ev = item.json;\n  const summary = ev.summary || ev.title || 'Pickleball Match';\n  const desc = ev.description || '';\n  const loc = ev.location || '';\n  const combined = `${summary} ${loc} ${desc}`;\n  \n  const cMatch = combined.match(/court[\\s_-]*([1-9]|1[0-2])\\b/i);\n  const cNum = cMatch ? cMatch[1] : '1';\n  const courtId = `court_${cNum}`;\n  const courtName = `Court ${cNum}`;\n  \n  const startRaw = ev.start?.dateTime || ev.start?.date || '';\n  const endRaw = ev.end?.dateTime || ev.end?.date || '';\n  let dStr = targetDate;\n  let slotStr = '9:00am-10:00am';\n  let dur = 60;\n  \n  // Extract date and local time directly via regex to preserve local time\n  const m = startRaw.match(/^(\\d{4}-\\d{2}-\\d{2})T(\\d{2}):(\\d{2})/);\n  if (m) {\n    dStr = m[1];\n    const h = parseInt(m[2], 10);\n    const min = parseInt(m[3], 10);\n    const startMins = h * 60 + min;\n    \n    if (endRaw.includes('T')) {\n      const endM = endRaw.match(/T(\\d{2}):(\\d{2})/);\n      if (endM) {\n        const endH = parseInt(endM[1], 10);\n        const endMin = parseInt(endM[2], 10);\n        dur = (endH * 60 + endMin) - startMins;\n        if (dur <= 0) dur = 60;\n      }\n    }\n    slotStr = formatSlotFromMinutes(startMins, dur);\n  } else if (startRaw) {\n    dStr = startRaw.split('T')[0];\n  }\n  \n  let player = 'Pickleball Player';\n  const pMatch = summary.match(/-\\s*([^()]+?)(?:\\s*\\(|$)/);\n  if (pMatch) {\n    player = pMatch[1].trim();\n  } else if (ev.attendees && ev.attendees.length > 0) {\n    const att = ev.attendees[0];\n    player = typeof att === 'string' ? att.split('@')[0] : (att.email?.split('@')[0] || att.displayName || 'Player');\n  }\n  \n  let match = 'Doubles Match';\n  if (/singles/i.test(combined)) match = 'Singles Match';\n  else if (/tournament/i.test(combined)) match = 'Tournament';\n  else if (/coaching|lesson|clinic/i.test(combined)) match = 'Private Coaching';\n  else if (/open play|rally/i.test(combined)) match = 'Open Play';\n  \n  const pinMatch = desc.match(/(?:PIN|code|pass)[\\s:]*([0-9]{4})/i);\n  const pinCode = pinMatch ? pinMatch[1] : '8888';\n  \n  return {\n    id: ev.id || `gcal_${Date.now()}`,\n    courtId,\n    courtName,\n    date: dStr,\n    timeSlot: slotStr,\n    durationMinutes: dur,\n    playerName: player,\n    playerEmail: ev.attendees?.[0]?.email || ev.attendees?.[0] || 'player@delta.local',\n    matchType: match,\n    pinCode,\n    googleCalendarEventId: ev.id,\n    googleCalendarLink: ev.htmlLink || '',\n    status: 'CONFIRMED'\n  };\n});\n\nfunction parseStartMinutes(tStr) {\n  if (!tStr) return 0;\n  const clean = tStr.trim();\n  const rangeMatch = clean.match(/^(\\d{1,2}):(\\d{2})\\s*(am|pm)?/i);\n  if (rangeMatch) {\n    let hours = parseInt(rangeMatch[1], 10);\n    const mins = parseInt(rangeMatch[2], 10);\n    const ap = rangeMatch[3] ? rangeMatch[3].toLowerCase() : null;\n    if (ap === 'pm' && hours < 12) hours += 12;\n    if (ap === 'am' && hours === 12) hours = 0;\n    return hours * 60 + mins;\n  }\n  return 0;\n}\n\n// Deduplicate existing bookings with synced Google Calendar events\nconst merged = [...gcalBookings];\nfor (const b of existingBookings) {\n  const isDup = merged.some(m => m.date === b.date && m.courtId === b.courtId && parseStartMinutes(m.timeSlot) === parseStartMinutes(b.timeSlot));\n  if (!isDup) {\n    merged.push(b);\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_court_schedule',\n    date: targetDate,\n    totalBookings: merged.length,\n    bookings: merged,\n    gcalEventsCount: gcalBookings.length,\n    synchronizedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000020",
+      "name": "Generate Court Schedule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000021",
+      "name": "Respond: Court Schedule",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1520, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI Court Availability & Collision Resolver (No feedback email dispatched)\nconst input = $input.first().json;\nconst { facilityConfig, bookingRequest, existingBookings } = input;\nconst { courtId, courtName, date, timeSlot, durationMinutes, reqSlotMins, playerName, playerEmail } = bookingRequest;\nconst { facilityOpenMins, facilityCloseMins, courtCount, openTime, closeTime } = facilityConfig;\n\nfunction parseMins(tStr) {\n  if (!tStr) return 0;\n  const clean = tStr.trim();\n  const rangeMatch = clean.match(/^(\\d{1,2}):(\\d{2})\\s*(am|pm)?/i);\n  if (rangeMatch) {\n    let hours = parseInt(rangeMatch[1], 10);\n    const mins = parseInt(rangeMatch[2], 10);\n    const ap = rangeMatch[3] ? rangeMatch[3].toLowerCase() : null;\n    if (ap === 'pm' && hours < 12) hours += 12;\n    if (ap === 'am' && hours === 12) hours = 0;\n    return hours * 60 + mins;\n  }\n  return 0;\n}\n\n// 1. Boundary check: Within facility operating hours?\nif (reqSlotMins < facilityOpenMins || reqSlotMins + durationMinutes > facilityCloseMins) {\n  return [{\n    json: {\n      success: true,\n      action: 'check_availability',\n      status: 'OUT_OF_BOUNDS',\n      isAvailable: false,\n      courtId,\n      courtName,\n      date,\n      timeSlot,\n      email: playerEmail,\n      reason: `Requested time ${timeSlot} (1 Hour) is outside facility operating hours (${openTime} – ${closeTime}).`,\n      aiEvaluation: `Facility operating hours policy violated. Courts open at ${openTime} and close at ${closeTime}. Please choose an operating slot.`,\n      suggestedAlternatives: [\n        { courtId, courtName, date, timeSlot: '8:00am-9:00am', label: `${date} at 8:00am-9:00am (1 Hour) on ${courtName} (Morning Opening)` },\n        { courtId, courtName, date, timeSlot: '5:00pm-6:00pm', label: `${date} at 5:00pm-6:00pm (1 Hour) on ${courtName} (Evening Prime)` }\n      ]\n    }\n  }];\n}\n\n// 2. Collision check: Is the requested court already booked at this time slot?\nconst collision = existingBookings.find(b => b.date === date && b.courtId === courtId && parseMins(b.timeSlot) === reqSlotMins);\n\nif (collision) {\n  const alternativeCourts = [];\n  for (let i = 1; i <= courtCount; i++) {\n    const altId = `court_${i}`;\n    if (altId === courtId) continue;\n    const altCollision = existingBookings.find(b => b.date === date && b.courtId === altId && parseMins(b.timeSlot) === reqSlotMins);\n    if (!altCollision) {\n      alternativeCourts.push({\n        courtId: altId,\n        courtName: `Court ${i}`,\n        date,\n        timeSlot,\n        label: `${date} at ${timeSlot} (1 Hour) on Court ${i} (Immediate Alternate Court)`\n      });\n    }\n  }\n\n  const isMorning = reqSlotMins < 12 * 60;\n  const adjacentSlot = isMorning ? '11:00am-12:00pm' : '7:00pm-8:00pm';\n  alternativeCourts.push({\n    courtId,\n    courtName,\n    date,\n    timeSlot: adjacentSlot,\n    label: `${date} at ${adjacentSlot} (1 Hour) on ${courtName} (Adjacent Slot)`\n  });\n\n  return [{\n    json: {\n      success: true,\n      action: 'check_availability',\n      status: 'CONFLICT',\n      isAvailable: false,\n      courtId,\n      courtName,\n      date,\n      timeSlot,\n      email: playerEmail,\n      conflictWith: `${collision.playerName || 'Reserved'} (${collision.matchType || 'Match'})`,\n      reason: `${courtName} is already reserved for ${collision.playerName || 'a match'} at ${timeSlot} (1 Hour).`,\n      aiEvaluation: `AI Court Inspector detected a schedule collision on ${courtName} for ${date} at ${timeSlot} (1 Hour). ${alternativeCourts.length} alternative courts/slots are available.`,\n      suggestedAlternatives: alternativeCourts\n    }\n  }];\n}\n\n// 3. Slot is 100% available!\nconst isPeak = reqSlotMins >= 17 * 60;\nconst courtFee = isPeak ? 35 : 25;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'check_availability',\n    status: 'AVAILABLE',\n    isAvailable: true,\n    courtId,\n    courtName,\n    date,\n    timeSlot,\n    email: playerEmail,\n    durationMinutes,\n    durationLabel: '1 Hour',\n    pricing: {\n      courtRatePerHour: courtFee,\n      isPeakHour: isPeak,\n      estimatedTotal: courtFee * (durationMinutes / 60)\n    },\n    aiEvaluation: `Court availability verified! ${courtName} is 100% open on ${date} at ${timeSlot} (1 Hour). Operating conditions, lighting, and net tension verified ready.`,\n    requiresConfirmation: true,\n    holdExpiresInMinutes: 15,\n    evaluatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000029",
+      "name": "AI Court Availability Evaluator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000031",
+      "name": "Respond: Availability Checked",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1240, 480]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "returnAll": false,
+        "limit": 20,
+        "options": {
+          "singleEvents": true,
+          "timeMin": "={{ $('Parse & Normalize Parameters').first().json.bookingRequest.startIso }}",
+          "timeMax": "={{ $('Parse & Normalize Parameters').first().json.bookingRequest.endIso }}"
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000037",
+      "name": "Google Calendar: Search Existing Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [960, 640],
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if a calendar event already exists for this court on this date/time to prevent duplicate calendar entries\nconst items = $input.all();\nconst req = $('Parse & Normalize Parameters').first().json.bookingRequest;\n\nconst gcalEvents = items\n  .map(i => i.json)\n  .filter(ev => ev && (ev.id || ev.summary));\n\n// Match court name or court number in summary, description, or location\nconst duplicate = gcalEvents.find(ev => {\n  const summary = ev.summary || ev.title || '';\n  const desc = ev.description || '';\n  const loc = ev.location || '';\n  const combined = `${summary} ${desc} ${loc}`.toLowerCase();\n  \n  const courtNumMatch = req.courtName.match(/(\\d+)/);\n  const courtNum = courtNumMatch ? courtNumMatch[1] : '';\n  const courtMatched = combined.includes(req.courtName.toLowerCase()) || \n                       (courtNum && (combined.includes(`court ${courtNum}`) || combined.includes(`court_${courtNum}`)));\n  \n  return courtMatched;\n});\n\nreturn [{\n  json: {\n    isDuplicate: !!duplicate,\n    existingEventId: duplicate ? duplicate.id : null,\n    existingEventLink: duplicate ? (duplicate.htmlLink || '') : null,\n    existingEventSummary: duplicate ? duplicate.summary : null,\n    bookingRequest: req\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000038",
+      "name": "Check Duplicate Court Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 640]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.isDuplicate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "pb000001-0000-4000-a000-000000000039",
+      "name": "If: Event Already Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 640]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "start": "={{ $('Parse & Normalize Parameters').first().json.bookingRequest.startIso }}",
+        "end": "={{ $('Parse & Normalize Parameters').first().json.bookingRequest.endIso }}",
+        "additionalFields": {
+          "summary": "={{ 'Pickleball: ' + $('Parse & Normalize Parameters').first().json.bookingRequest.courtName + ' - ' + $('Parse & Normalize Parameters').first().json.bookingRequest.playerName + ' (' + $('Parse & Normalize Parameters').first().json.bookingRequest.matchType + ')' }}",
+          "description": "={{ 'Pickleball Court Reservation\\nFacility: Delta Pickleball Club & Training Facility\\nCourt: ' + $('Parse & Normalize Parameters').first().json.bookingRequest.courtName + '\\nPlayer: ' + $('Parse & Normalize Parameters').first().json.bookingRequest.playerName + ' (' + $('Parse & Normalize Parameters').first().json.bookingRequest.playerEmail + ')\\nPhone: ' + $('Parse & Normalize Parameters').first().json.bookingRequest.playerPhone + '\\nFormat: ' + $('Parse & Normalize Parameters').first().json.bookingRequest.matchType + '\\nRentals: ' + ($('Parse & Normalize Parameters').first().json.bookingRequest.rentals || []).join(', ') }}",
+          "location": "={{ 'Delta Pickleball Facility - ' + $('Parse & Normalize Parameters').first().json.bookingRequest.courtName }}",
+          "attendees": "={{ [$('Parse & Normalize Parameters').first().json.bookingRequest.playerEmail] }}"
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000040",
+      "name": "Google Calendar: Create Court Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [1800, 580],
+      "continueOnFail": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "googleCalendarOAuth2Api",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Finalize and issue confirmed court reservation pass with Google Calendar sync & duplicate prevention\nconst inputItem = $input.first().json;\nconst req = $('Parse & Normalize Parameters').first().json.bookingRequest;\n\n// Check if event was freshly created, or reused from existing Google Calendar event\nconst gcalId = inputItem.id || inputItem.existingEventId || null;\nconst gcalLink = inputItem.htmlLink || inputItem.existingEventLink || '';\nconst isDuplicatePrevented = inputItem.isDuplicate === true;\n\nconst randNum = Math.floor(1000 + Math.random() * 9000);\nconst bookingId = `PB-${req.date.replace(/-/g, '')}-${randNum}`;\nconst pinCode = String(Math.floor(1000 + Math.random() * 9000));\nconst isPeak = req.reqSlotMins >= 17 * 60;\nconst rate = isPeak ? 35 : 25;\nconst total = rate * (req.durationMinutes / 60) + (req.rentals || []).length * 5;\n\nconst newBooking = {\n  id: bookingId,\n  courtId: req.courtId,\n  courtName: req.courtName,\n  date: req.date,\n  timeSlot: req.timeSlot,\n  durationMinutes: req.durationMinutes,\n  playerName: req.playerName,\n  playerEmail: req.playerEmail,\n  playerPhone: req.playerPhone,\n  matchType: req.matchType,\n  rentals: req.rentals,\n  pinCode,\n  totalAmount: total,\n  status: 'CONFIRMED',\n  googleCalendarEventId: gcalId,\n  googleCalendarLink: gcalLink,\n  isDuplicatePrevented,\n  bookedAt: new Date().toISOString()\n};\n\nconst emailSubject = `Pickleball Pass Confirmed: ${req.courtName} [Access PIN: ${pinCode}]`;\nconst emailBody = `Hi ${req.playerName},\\n\\nYour pickleball court booking has been confirmed and officially added to Google Calendar!\\n\\nReservation Details:\\n- Court: ${req.courtName}\\n- Date: ${req.date}\\n- Time Slot: ${req.timeSlot} (${req.durationMinutes} mins)\\n- Match Format: ${req.matchType}\\n- Gate Access PIN: ${pinCode}\\n- Booking Ref: ${bookingId}\\n${gcalLink ? '- Calendar Event Link: ' + gcalLink + '\\n' : ''}\\nGate Entry Instructions:\\nEnter your 4-digit PIN on the automated keypad at Gate 2. The gate unlocks 10 minutes prior to match time.\\n\\nSee you on the court!\\nDelta Pickleball Club`;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'book_court',\n    status: 'BOOKED',\n    bookingId,\n    booking: newBooking,\n    accessCode: pinCode,\n    email: req.playerEmail,\n    gmailSubject: emailSubject,\n    gmailBody: emailBody,\n    googleCalendarEventId: gcalId,\n    googleCalendarLink: gcalLink,\n    isDuplicatePrevented,\n    receipt: {\n      facilityName: 'Delta Pickleball Club & Training Facility',\n      court: req.courtName,\n      date: req.date,\n      timeSlot: req.timeSlot,\n      pinCode,\n      totalPaid: `$${total}.00`,\n      digitalPassUrl: `https://delta.local/pass/${bookingId}`,\n      googleCalendarLink: gcalLink\n    },\n    message: isDuplicatePrevented\n      ? `Existing Google Calendar reservation detected for ${req.courtName} at ${req.timeSlot}. Duplicate prevented! Gate PIN code: ${pinCode}. Confirmation sent to ${req.playerEmail}.`\n      : `Court booking confirmed for ${req.playerName} on ${req.courtName} at ${req.timeSlot}. Scheduled on Google Calendar. Gate PIN code: ${pinCode}. Confirmation sent to ${req.playerEmail}.`,\n    confirmedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000041",
+      "name": "Finalize Court Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2080, 640]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.gmailSubject }}",
+        "body": "={{ $json.gmailBody }}"
+      },
+      "id": "pb000001-0000-4000-a000-000000000042",
+      "name": "Gmail: Send Court Gate PIN & Pass",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2360, 700],
+      "continueOnFail": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailOAuth2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000043",
+      "name": "Respond: Booking Finalized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2360, 600]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 10,
+        "simple": true,
+        "filters": {
+          "q": "subject:(pickleball OR court OR reservation OR booking) newer_than:3d"
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000050",
+      "name": "Gmail: Search Court Inquiries",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 860],
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailOAuth2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse inbound Gmail messages into court reservation request objects\nconst items = $input.all();\nconst emails = items.filter(i => i.json && (i.json.id || i.json.snippet || i.json.subject));\n\nconst parsedRequests = emails.map((item, idx) => {\n  const e = item.json;\n  const snippet = e.snippet || e.body || '';\n  const subject = e.subject || 'Pickleball Court Inquiry';\n  const combined = `${subject} ${snippet}`;\n  \n  const cMatch = combined.match(/court[\\s_-]*([1-9]|1[0-2])\\b/i);\n  const courtNum = cMatch ? cMatch[1] : String((idx % 4) + 1);\n  const courtId = `court_${courtNum}`;\n  const courtName = `Court ${courtNum}`;\n  \n  const dMatch = combined.match(/(\\d{4}-\\d{2}-\\d{2})/);\n  const dateStr = dMatch ? dMatch[1] : new Date().toISOString().split('T')[0];\n  \n  let slotStr = '10:00am-11:00am';\n  const slotMatch = combined.match(/(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?\\s*-\\s*\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)/i);\n  if (slotMatch) {\n    slotStr = slotMatch[1].replace(/\\s+/g, '').toLowerCase();\n  }\n  \n  let senderName = 'Pickleball Inquirer';\n  let senderEmail = 'player@delta.local';\n  \n  if (e.from) {\n    if (typeof e.from === 'string') {\n      const emMatch = e.from.match(/<([^>]+)>/);\n      senderEmail = emMatch ? emMatch[1] : e.from;\n      const namePart = e.from.replace(/<[^>]+>/, '').trim();\n      if (namePart) senderName = namePart;\n    } else if (e.from.value && e.from.value[0]) {\n      senderEmail = e.from.value[0].address || senderEmail;\n      senderName = e.from.value[0].name || senderName;\n    }\n  }\n  \n  return {\n    id: e.id || `pb_mail_${idx + 1}`,\n    subject,\n    senderName,\n    senderEmail,\n    snippet,\n    requestedCourtId: courtId,\n    requestedCourtName: courtName,\n    requestedDate: dateStr,\n    requestedSlot: slotStr,\n    receivedAt: e.date || new Date().toISOString()\n  };\n});\n\n// Fallback demo inquiries if inbox is empty\nif (parsedRequests.length === 0) {\n  const today = new Date().toISOString().split('T')[0];\n  const d = new Date();\n  d.setDate(d.getDate() + 1);\n  const tomorrow = d.toISOString().split('T')[0];\n  \n  parsedRequests.push(\n    {\n      id: 'pb_mail_01',\n      subject: 'Court 2 Reservation for Doubles Warmup',\n      senderName: 'Liam O\\'Connor',\n      senderEmail: 'liam.oc@pickleball-hub.org',\n      snippet: `Hi Delta, Looking to reserve Court 2 for our doubles tournament warmup on ${tomorrow} from 10:00am-11:00am.`,\n      requestedCourtId: 'court_2',\n      requestedCourtName: 'Court 2',\n      requestedDate: tomorrow,\n      requestedSlot: '10:00am-11:00am',\n      receivedAt: new Date().toISOString()\n    },\n    {\n      id: 'pb_mail_02',\n      subject: 'Evening Court Booking & Ball Machine Rental',\n      senderName: 'Maya Lin',\n      senderEmail: 'maya.lin@delta-sports.net',\n      snippet: `Hello, can we book Court 3 or Court 4 for open play rally on ${today} from 7:00pm-8:00pm?`,\n      requestedCourtId: 'court_3',\n      requestedCourtName: 'Court 3',\n      requestedDate: today,\n      requestedSlot: '7:00pm-8:00pm',\n      receivedAt: new Date().toISOString()\n    }\n  );\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'check_gmail',\n    totalInquiries: parsedRequests.length,\n    inquiries: parsedRequests,\n    evaluatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb000001-0000-4000-a000-000000000051",
+      "name": "Parse Inbound Court Inquiries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 860]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "pb000001-0000-4000-a000-000000000052",
+      "name": "Respond: Inbound Court Inquiries",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1520, 860]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process cancellation of court reservation\nconst first = $input.first().json;\nconst body = first.body || first;\nconst bookingRef = body.bookingReference || body.bookingId || 'PB-CANCEL';\nconst courtName = body.courtName || body.courtId || 'Court';\nconst date = body.date || '';\nconst timeSlot = body.timeSlot || '';\nconst reason = body.reason || 'Player requested cancellation';\nconst gcalEventId = body.googleCalendarEventId || null;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'cancel_court',\n    status: 'CANCELLED',\n    bookingReference: bookingRef,\n    refundStatus: 'REFUNDED',\n    refundAmount: '$25.00',\n    courtName,\n    date,\n    timeSlot,\n    reason,\n    googleCalendarEventId: gcalEventId,\n    message: `Reservation ${bookingRef} cancelled successfully. Refund processed and access PIN revoked.`,\n    cancelledAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "pb-node-cancel-court",
+      "name": "Cancel Court Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 1040]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "pb-node-respond-cancel",
+      "name": "Respond: Court Cancelled",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1520, 1040]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse & Normalize Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger: Inbound Court Requests": {
+      "main": [
+        [
+          {
+            "node": "Parse & Normalize Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Normalize Parameters": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Configure Facility & Slots",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar: Sync Court Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Court Availability Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar: Search Existing Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail: Search Court Inquiries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel Court Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Facility & Slots": {
+      "main": [
+        [
+          {
+            "node": "Respond: Config Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Sync Court Events": {
+      "main": [
+        [
+          {
+            "node": "Generate Court Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Court Schedule": {
+      "main": [
+        [
+          {
+            "node": "Respond: Court Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Court Availability Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Respond: Availability Checked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Search Existing Events": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Court Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Court Event": {
+      "main": [
+        [
+          {
+            "node": "If: Event Already Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: Event Already Exists?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Court Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar: Create Court Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Create Court Event": {
+      "main": [
+        [
+          {
+            "node": "Finalize Court Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Court Booking": {
+      "main": [
+        [
+          {
+            "node": "Respond: Booking Finalized",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail: Send Court Gate PIN & Pass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Search Court Inquiries": {
+      "main": [
+        [
+          {
+            "node": "Parse Inbound Court Inquiries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Inbound Court Inquiries": {
+      "main": [
+        [
+          {
+            "node": "Respond: Inbound Court Inquiries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Court Booking": {
+      "main": [
+        [
+          {
+            "node": "Respond: Court Cancelled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

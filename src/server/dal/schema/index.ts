@@ -12,3 +12,10 @@ export {
 } from "./user_credentials";
 export { userRoles } from "./user_roles";
 export { users, type UserStatus } from "./users";
+export {
+  pickleballReservations,
+  type PickleballReservationRecord,
+  type InsertPickleballReservation,
+  type PickleballReservationStatus,
+  type PickleballPaymentStatus,
+} from "./pickleball_reservations";

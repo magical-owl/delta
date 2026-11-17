@@ -45,6 +45,27 @@ describe("dispatchWebhookAction Server Action", () => {
     expect(result.error).toContain("404");
   });
 
+  it("safely handles non-JSON or malformed error body without body already read error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("Invalid JSON in 'Response Body' field", {
+        status: 500,
+        statusText: "Internal Server Error",
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    const result = await dispatchWebhookAction(
+      "https://ozephyrmor.app.n8n.cloud/webhook-test/delta-events",
+      { event: "workspace.health_check" }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe(500);
+    expect(result.responseBody).toBe("Invalid JSON in 'Response Body' field");
+    expect(result.error).toContain("Invalid JSON");
+    expect(result.error).not.toContain("body already been read");
+  });
+
   it("handles network failure or invalid URL gracefully", async () => {
     const result = await dispatchWebhookAction("invalid-url-shape", {
       event: "workspace.health_check",

@@ -54,6 +54,19 @@ export const adminNavigation: NavEntry[] = [
     description: "Compliance exports, audit logs, and scheduled reports.",
   },
   {
+    title: "Reservation",
+    href: "/dashboard/reservation",
+    icon: "calendar-check",
+    description: "Google Calendar sync, slot booking, and AI availability agent.",
+  },
+  {
+    title: "Pickleball",
+    href: "/dashboard/pickleball",
+    icon: "table-tennis-paddle-ball",
+    description:
+      "Pickleball court configurations, operating hours, live grid, and booking agent.",
+  },
+  {
     groupTitle: "Automations (n8n)",
     icon: "bolt",
     items: [
@@ -213,6 +226,16 @@ export const routeTitleMap: Record<string, { title: string; subtitle: string }> 
   "/dashboard/reports": {
     title: "Reports & Audits",
     subtitle: "Compliance certificates, audit trails, and export logs",
+  },
+  "/dashboard/reservation": {
+    title: "Reservation & Calendar Sync",
+    subtitle:
+      "Google Calendar event sync, slot availability checking via n8n AI agent, and booking confirmation",
+  },
+  "/dashboard/pickleball": {
+    title: "Pickleball Court Reservation & Facility Manager",
+    subtitle:
+      "Court configuration, opening/closing hours, visual slot matrix, and n8n booking agent",
   },
   "/dashboard/automations": {
     title: "n8n Automation Hub",

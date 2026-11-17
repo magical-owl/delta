@@ -40,25 +40,36 @@ export async function dispatchWebhookAction(
     const latencyMs = Date.now() - startTime;
     let responseBody: unknown = null;
 
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
+    // Read response body as text once to avoid "body is unusable. body already been read" error
+    const rawText = await response.text();
+    if (rawText.trim().length > 0) {
       try {
-        responseBody = await response.json();
+        responseBody = JSON.parse(rawText);
       } catch {
-        responseBody = await response.text();
+        responseBody = rawText;
       }
-    } else {
-      responseBody = await response.text();
     }
 
     if (!response.ok) {
+      let detailedError = `Webhook returned HTTP ${response.status} ${response.statusText}`;
+      if (
+        responseBody &&
+        typeof responseBody === "object" &&
+        "message" in responseBody &&
+        typeof (responseBody as { message: unknown }).message === "string"
+      ) {
+        detailedError += `: ${(responseBody as { message: string }).message}`;
+      } else if (typeof responseBody === "string" && responseBody.trim()) {
+        detailedError += `: ${responseBody.slice(0, 200)}`;
+      }
+
       return {
         success: false,
         status: response.status,
         statusText: response.statusText,
         responseBody,
         latencyMs,
-        error: `Webhook returned HTTP ${response.status} ${response.statusText}`,
+        error: detailedError,
         dispatchedAt,
       };
     }

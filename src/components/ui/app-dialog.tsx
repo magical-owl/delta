@@ -81,7 +81,7 @@ export const AppDialog: React.FC<AppDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
       role="presentation"
     >
       {/* Backdrop */}
@@ -99,24 +99,27 @@ export const AppDialog: React.FC<AppDialogProps> = ({
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descId : undefined}
         className={cn(
-          "relative w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-6 shadow-2xl transition-all animate-scale-in text-left z-10",
+          "relative w-full max-h-[calc(100dvh-3.5rem)] flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-4 sm:p-5 shadow-2xl transition-all animate-scale-in text-left z-10 my-auto",
           maxWidthMap[maxWidth],
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4">
-          <div className="flex flex-col gap-1">
+        <div className="flex items-start justify-between gap-4 pb-3 flex-shrink-0">
+          <div className="flex flex-col gap-0.5">
             {title && (
               <h2
                 id={titleId}
-                className="text-lg font-semibold tracking-tight text-[var(--foreground)]"
+                className="text-base sm:text-lg font-semibold tracking-tight text-[var(--foreground)]"
               >
                 {title}
               </h2>
             )}
             {description && (
-              <p id={descId} className="text-sm text-[var(--text-muted)]">
+              <p
+                id={descId}
+                className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed"
+              >
                 {description}
               </p>
             )}
@@ -125,18 +128,20 @@ export const AppDialog: React.FC<AppDialogProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 -mr-1 -mt-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
+            className="p-1.5 -mr-1 -mt-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer flex-shrink-0"
           >
             <AppIcon name="xmark" size="md" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="py-2 text-sm text-[var(--foreground)]">{children}</div>
+        {/* Scrollable Content Body with min-h-0 to allow proper flex shrinking and internal scrolling */}
+        <div className="flex-1 min-h-0 overflow-y-auto py-1 text-sm text-[var(--foreground)] pr-0.5">
+          {children}
+        </div>
 
         {/* Footer */}
         {footer && (
-          <div className="mt-6 pt-4 border-t border-[var(--border)] flex items-center justify-end gap-3">
+          <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center justify-end gap-3 flex-shrink-0">
             {footer}
           </div>
         )}

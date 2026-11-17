@@ -14,6 +14,7 @@ export type IconName =
   | "bars"
   | "xmark"
   | "chevron-right"
+  | "chevron-left"
   | "chevron-down"
   | "chevron-up"
   | "angle-left"
@@ -40,6 +41,7 @@ export type IconName =
   | "magnifying-glass"
   | "calendar"
   | "calendar-days"
+  | "calendar-check"
   | "filter"
   | "check"
   | "arrows-rotate"
@@ -66,7 +68,13 @@ export type IconName =
   | "right-from-bracket"
   | "circle-user"
   | "video"
-  | "fire";
+  | "fire"
+  | "table-tennis-paddle-ball"
+  | "trophy"
+  | "stopwatch"
+  | "credit-card"
+  | "ban"
+  | "location-dot";
 
 export type IconSize = "xs" | "sm" | "md" | "lg" | "xl";
 
